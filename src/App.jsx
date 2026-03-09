@@ -727,11 +727,11 @@ export default function DialTrendApp() {
           <h1 className="fu1" style={{ fontSize: "clamp(36px, 5.5vw, 62px)", fontWeight: 800, lineHeight: 1.1, maxWidth: 560, margin: "0 auto 16px", letterSpacing: "-1.5px", color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Before you call,{" "}
             <span style={{ background: "linear-gradient(90deg, #00e5a0, #00c4ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              find a real person.
+              find a real person
             </span>
           </h1>
           <p className="fu2" style={{ fontSize: 17, color: T.muted, maxWidth: 380, margin: "0 auto 32px", lineHeight: 1.7, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}>
-            See when hold times are shortest — and skip the bot.
+            See when hold times are shortest and skip the bot.
           </p>
 
           {/* Search */}
