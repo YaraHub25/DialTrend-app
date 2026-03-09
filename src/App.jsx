@@ -220,7 +220,9 @@ function getAgentStatus(company) {
 const T = {
   bg: "#0a0a0f", surface: "#13131a", border: "rgba(255,255,255,0.08)",
   teal: "#00e5a0", tealDim: "rgba(0,229,160,0.10)", tealBorder: "rgba(0,229,160,0.25)",
-  text: "#f1f5f9", muted: "rgba(255,255,255,0.45)", faint: "rgba(255,255,255,0.18)",
+  text: "#f1f5f9", muted: "rgba(255,255,255,0.55)", faint: "rgba(255,255,255,0.22)",
+  body: "'Plus Jakarta Sans', sans-serif",
+  brand: "'Syne', sans-serif",
 };
 
 // ─── Logo ─────────────────────────────────────────────────────────────────────
@@ -295,7 +297,7 @@ function LiveWaitCard({ company, rank, onClick }) {
   const wait = company.hourly[nowH];
   const status = getAgentStatus(company);
   const rankColors = ["#00e5a0", "#f59e0b", "#ef4444"];
-  const rankLabels = ["Shortest wait", "Moderate wait", "Long wait"];
+  const rankLabels = ["Good time to call", "Moderate wait", "Avoid right now"];
 
   return (
     <button onClick={onClick} style={{
@@ -682,9 +684,10 @@ export default function DialTrendApp() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@400;600;700;800&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0a0a0f; }
-        ::placeholder { color: rgba(255,255,255,0.25); }
+        body { background: #0a0a0f; font-family: 'Plus Jakarta Sans', sans-serif; }
+        ::placeholder { color: rgba(255,255,255,0.25); font-family: 'Plus Jakarta Sans', sans-serif; }
         .ct-input:focus { outline: none; border-color: rgba(0,229,160,0.5) !important; box-shadow: 0 0 0 3px rgba(0,229,160,0.08); }
         .ct-row:hover { background: rgba(255,255,255,0.05) !important; }
         .ct-quick:hover { background: rgba(0,229,160,0.12) !important; color: #00e5a0 !important; border-color: rgba(0,229,160,0.35) !important; }
@@ -702,7 +705,7 @@ export default function DialTrendApp() {
         .live-dot { animation: pulse 2s ease-in-out infinite; }
       `}</style>
 
-      <div style={{ minHeight: "100vh", background: T.bg, fontFamily: "'Syne', sans-serif", color: T.text }}>
+      <div style={{ minHeight: "100vh", background: T.bg, fontFamily: T.body, color: T.text }}>
         {menuOpen && <HamburgerMenu onClose={() => setMenuOpen(false)} onHowItWorks={() => { setMenuOpen(false); setShowOnboarding(true); }} />}
         {showOnboarding && <HowItWorksPanel onClose={() => setShowOnboarding(false)} />}
 
@@ -721,14 +724,14 @@ export default function DialTrendApp() {
 
         {/* Hero — compact, action-focused */}
         <section style={{ textAlign: "center", padding: "52px 20px 36px", background: "radial-gradient(ellipse 70% 40% at 50% 0%, rgba(0,229,160,0.07) 0%, transparent 70%)" }}>
-          <h1 className="fu1" style={{ fontSize: "clamp(30px, 4.5vw, 54px)", fontWeight: 800, lineHeight: 1.08, maxWidth: 580, margin: "0 auto 14px", letterSpacing: "-2px", color: T.text }}>
-            Who has the shortest<br />
+          <h1 className="fu1" style={{ fontSize: "clamp(32px, 5vw, 58px)", fontWeight: 800, lineHeight: 1.1, maxWidth: 600, margin: "0 auto 16px", letterSpacing: "-1.5px", color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+            Stop guessing how long<br />
             <span style={{ background: "linear-gradient(90deg, #00e5a0, #00c4ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              wait time right now?
+              you'll wait on hold.
             </span>
           </h1>
-          <p className="fu2" style={{ fontSize: 16, color: T.muted, maxWidth: 380, margin: "0 auto 32px", lineHeight: 1.65 }}>
-            Real community data on customer support wait times — updated hourly.
+          <p className="fu2" style={{ fontSize: 17, color: T.muted, maxWidth: 400, margin: "0 auto 32px", lineHeight: 1.7, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}>
+            Check the hold time <strong style={{ color: T.text, fontWeight: 600 }}>before you call.</strong> Find the best hour to reach a real person — not a bot.
           </p>
 
           {/* Search */}
@@ -736,8 +739,8 @@ export default function DialTrendApp() {
             <div style={{ position: "relative" }}>
               <Search size={17} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.25)", pointerEvents: "none" }} />
               <input className="ct-input" value={query} onChange={e => setQuery(e.target.value)}
-                placeholder="Search a company... Netflix, AT&T, Delta..."
-                style={{ width: "100%", padding: "14px 20px 14px 44px", fontSize: 15, borderRadius: 14, border: `1px solid ${T.border}`, background: T.surface, color: T.text, fontFamily: "'Syne', sans-serif", transition: "all 0.2s" }} />
+                placeholder="Who are you trying to call? Netflix, AT&T, Delta..."
+                style={{ width: "100%", padding: "14px 20px 14px 44px", fontSize: 15, borderRadius: 14, border: `1px solid ${T.border}`, background: T.surface, color: T.text, fontFamily: T.body, transition: "all 0.2s" }} />
             </div>
             {filtered.length > 0 && (
               <div style={{ position: "absolute", top: "calc(100% + 6px)", left: 0, right: 0, background: T.surface, border: `1px solid ${T.border}`, borderRadius: 14, overflow: "hidden", zIndex: 20, boxShadow: "0 16px 48px rgba(0,0,0,0.5)" }}>
@@ -779,7 +782,7 @@ export default function DialTrendApp() {
             {/* Section header with live indicator */}
             <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 24 }}>
               <div className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2 }}>Live right now · {fmt(nowH)}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Who to call right now · {fmt(nowH)}</span>
             </div>
 
             {/* Three ranked cards */}
@@ -789,8 +792,8 @@ export default function DialTrendApp() {
               ))}
             </div>
 
-            <p style={{ textAlign: "center", fontSize: 12, color: T.faint, marginTop: 16 }}>
-              Tap any card to see full hours, chart, and call button
+            <p style={{ textAlign: "center", fontSize: 13, color: T.faint, marginTop: 16, fontFamily: T.body }}>
+              Tap any card to see the full day's chart and call button
             </p>
           </div>
         </section>
