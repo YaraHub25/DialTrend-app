@@ -725,13 +725,13 @@ export default function DialTrendApp() {
         {/* Hero — compact, action-focused */}
         <section style={{ textAlign: "center", padding: "52px 20px 36px", background: "radial-gradient(ellipse 70% 40% at 50% 0%, rgba(0,229,160,0.07) 0%, transparent 70%)" }}>
           <h1 className="fu1" style={{ fontSize: "clamp(32px, 5vw, 58px)", fontWeight: 800, lineHeight: 1.1, maxWidth: 600, margin: "0 auto 16px", letterSpacing: "-1.5px", color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-            Stop guessing how long<br />
+            Stop Guessing Your<br />
             <span style={{ background: "linear-gradient(90deg, #00e5a0, #00c4ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              you'll wait on hold.
+              Hold Time
             </span>
           </h1>
           <p className="fu2" style={{ fontSize: 17, color: T.muted, maxWidth: 400, margin: "0 auto 32px", lineHeight: 1.7, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}>
-            Check the hold time <strong style={{ color: T.text, fontWeight: 600 }}>before you call.</strong> Find the best hour to reach a real person — not a bot.
+            See how long the wait is <strong style={{ color: T.text, fontWeight: 600 }}>before you call.</strong> Find the best hour to reach a real person — not a bot.
           </p>
 
           {/* Search */}
