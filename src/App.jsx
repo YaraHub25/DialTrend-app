@@ -261,30 +261,55 @@ function AgentBadge({ company, size = "sm" }) {
 }
 
 // ─── Bar Chart ────────────────────────────────────────────────────────────────
-function BarChart({ hourly, compact = false }) {
+function BarChart({ hourly, compact = false, animate = false }) {
+  const [mounted, setMounted] = useState(false);
+  const [hovered, setHovered] = useState(null);
   const max = Math.max(...hourly);
   const nowH = new Date().getHours();
-  const chartH = compact ? 56 : 80;
+  const chartH = compact ? 56 : 90;
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), animate ? 60 : 0);
+    return () => clearTimeout(t);
+  }, [animate]);
+
   return (
     <div>
       <div style={{ display: "flex", alignItems: "flex-end", gap: compact ? 2 : 3, height: chartH, width: "100%" }}>
-        {hourly.map((v,i) => {
-          const h = max > 0 ? Math.round((v/max)*(chartH-10)) + (v > 0 ? 4 : 0) : 0;
+        {hourly.map((v, i) => {
+          const targetH = max > 0 ? Math.round((v / max) * (chartH - 10)) + (v > 0 ? 4 : 0) : 0;
+          const h = mounted ? Math.max(targetH, 3) : 3;
           const color = v === 0 ? "rgba(255,255,255,0.06)" : barColor(v, max);
+          const isNow = i === nowH;
+          const isHov = hovered === i;
           return (
-            <div key={i} title={`${fmt(i)}: ${v > 0 ? `${v} min` : "Closed/Bot"}`} style={{
-              flex: 1, height: Math.max(h, 3), borderRadius: "3px 3px 0 0",
-              background: color, opacity: i === nowH ? 1 : 0.7,
-              boxShadow: i === nowH ? `0 0 8px ${color}88` : "none",
-              transition: "height 0.4s ease",
-            }} />
+            <div
+              key={i}
+              title={`${fmt(i)}: ${v > 0 ? `${v} min` : "Closed/Bot"}`}
+              onMouseEnter={() => !compact && setHovered(i)}
+              onMouseLeave={() => !compact && setHovered(null)}
+              style={{
+                flex: 1, height: h, borderRadius: "3px 3px 0 0",
+                background: color,
+                opacity: isHov ? 1 : isNow ? 1 : 0.65,
+                boxShadow: isNow ? `0 0 10px ${color}99` : isHov ? `0 0 8px ${color}66` : "none",
+                transform: isHov && !compact ? "scaleY(1.07)" : "scaleY(1)",
+                transformOrigin: "bottom",
+                transition: `height ${animate ? `0.55s ${i * 16}ms` : "0.3s"} cubic-bezier(0.34,1.4,0.64,1), opacity 0.2s, transform 0.15s`,
+                cursor: compact ? "default" : "pointer",
+              }}
+            />
           );
         })}
       </div>
-      {/* Y-axis labels */}
-      {!compact && max > 0 && (
-        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4, marginBottom: 2 }}>
-          <span style={{ fontSize: 10, color: T.faint }}>{max} min max</span>
+      {!compact && hovered !== null && hourly[hovered] > 0 && (
+        <div style={{ textAlign: "center", marginTop: 6, fontSize: 12, color: barColor(hourly[hovered], max), fontWeight: 700, fontFamily: T.body, animation: "fadeUp 0.15s ease both" }}>
+          {fmt(hovered)} · {hourly[hovered]} min wait
+        </div>
+      )}
+      {!compact && hovered === null && max > 0 && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 6 }}>
+          <span style={{ fontSize: 10, color: T.faint, fontFamily: T.body }}>{max} min max</span>
         </div>
       )}
     </div>
@@ -528,120 +553,236 @@ function CompanyDetail({ company, onBack }) {
   const max = Math.max(...company.hourly);
   const status = getAgentStatus(company);
 
+  // Count-up animation for wait number
+  const [displayWait, setDisplayWait] = useState(0);
+  const [cardVisible, setCardVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setCardVisible(true), 100);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (nowWait <= 0) return;
+    let start = 0;
+    const step = Math.ceil(nowWait / 20);
+    const timer = setInterval(() => {
+      start += step;
+      if (start >= nowWait) { setDisplayWait(nowWait); clearInterval(timer); }
+      else setDisplayWait(start);
+    }, 40);
+    return () => clearInterval(timer);
+  }, [nowWait]);
+
+  // Smart recommendation in plain English
+  const getRecommendation = () => {
+    if (!status.human) {
+      const nextH = company.humanHours.start;
+      return { type: "closed", msg: `No one's available right now. Try again at ${fmt(nextH)}.`, icon: "🕐" };
+    }
+    if (nowWait === 0) return { type: "nodata", msg: "No wait data for this hour yet.", icon: "📊" };
+    if (nowWait <= 8) return { type: "good", msg: `Good time to call — short wait right now.`, icon: "✅" };
+    if (nowWait <= 18) return { type: "ok", msg: `Moderate wait. If it's urgent, go ahead.`, icon: "⏳" };
+    const bestH = best[0];
+    return { type: "bad", msg: `Long wait right now. Try calling at ${fmt(bestH)} instead.`, icon: "⚠️" };
+  };
+  const rec = getRecommendation();
+  const recColors = { good: T.teal, ok: "#f59e0b", bad: "#ef4444", closed: T.faint, nodata: T.faint };
+
   return (
-    <div style={{ minHeight: "100vh", background: T.bg, fontFamily: "'Syne', sans-serif", color: T.text, overflowX: "hidden", width: "100%" }}>
+    <div style={{ minHeight: "100vh", background: T.bg, fontFamily: T.body, color: T.text, overflowX: "hidden", width: "100%" }}>
       {modal && <ContributeModal company={company} onClose={() => setModal(false)} />}
+
       <header style={{ background: "rgba(10,10,15,0.92)", borderBottom: `1px solid ${T.border}`, position: "sticky", top: 0, zIndex: 40, backdropFilter: "blur(12px)" }}>
         <div style={{ maxWidth: 660, margin: "0 auto", padding: "15px 22px", display: "flex", alignItems: "center", gap: 14 }}>
-          <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: T.muted, fontSize: 14, fontFamily: "'Syne', sans-serif" }}>
+          <button onClick={onBack} style={{ background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, color: T.muted, fontSize: 14, fontFamily: T.body }}>
             <ChevronLeft size={17} /> Back
           </button>
           <Logo />
         </div>
       </header>
 
-      <div style={{ maxWidth: 620, margin: "0 auto", padding: "24px 18px 60px" }}>
-        {/* Header card */}
-        <div style={{ background: T.surface, borderRadius: 18, padding: 22, border: `1px solid ${T.border}`, marginBottom: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 12 }}>
+      <div style={{ maxWidth: 580, margin: "0 auto", padding: "24px 18px 72px" }}>
+
+        {/* ── Company identity ── */}
+        <div style={{
+          animation: cardVisible ? "fadeUp 0.4s ease both" : "none",
+          background: T.surface, borderRadius: 20, padding: "20px 22px",
+          border: `1px solid ${T.border}`, marginBottom: 12,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
             <div>
-              <div style={{ display: "inline-block", padding: "2px 10px", borderRadius: 20, background: "rgba(255,255,255,0.06)", color: T.muted, fontSize: 11, fontWeight: 700, letterSpacing: 1, marginBottom: 7, textTransform: "uppercase" }}>{company.category}</div>
-              <h1 style={{ fontSize: 26, fontWeight: 800, color: T.text }}>{company.name}</h1>
+              <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>{company.category}</div>
+              <h1 style={{ fontSize: 28, fontWeight: 800, color: T.text, fontFamily: T.brand, letterSpacing: "-0.5px" }}>{company.name}</h1>
             </div>
             <AgentBadge company={company} size="lg" />
           </div>
-          <div style={{ display: "flex", gap: 16, color: T.muted, fontSize: 13, flexWrap: "wrap", marginBottom: 10 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 5 }}><Phone size={13} color={T.faint} /> {company.phone}</span>
-            <span style={{ display: "flex", alignItems: "center", gap: 5 }}><Clock size={13} color={T.faint} /> {company.hours}</span>
+          <div style={{ display: "flex", gap: 14, color: T.faint, fontSize: 13, flexWrap: "wrap" }}>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}><Phone size={12} /> {company.phone}</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5 }}><Clock size={12} /> {company.hours}</span>
           </div>
           {company.botOnly && (
-            <div style={{ marginTop: 6, padding: "8px 12px", borderRadius: 9, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`, fontSize: 12, color: T.faint, display: "flex", alignItems: "center", gap: 7 }}>
-              <Bot size={12} color={T.faint} /> {company.botOnly}
+            <div style={{ marginTop: 10, padding: "7px 11px", borderRadius: 8, background: "rgba(255,255,255,0.03)", border: `1px solid ${T.border}`, fontSize: 12, color: T.faint, display: "flex", alignItems: "center", gap: 6 }}>
+              <Bot size={11} /> {company.botOnly}
             </div>
           )}
-          <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.22)", display: "flex", alignItems: "center", gap: 5 }}>
-            <Users size={11} /> {company.source}
+          <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", gap: 5 }}>
+            <Users size={10} /> {company.source}
           </div>
         </div>
 
-        {/* Right now */}
-        <div style={{ background: T.surface, borderRadius: 18, padding: 22, border: `1px solid ${T.border}`, marginBottom: 12 }}>
-          <div style={{ fontSize: 11, color: T.faint, marginBottom: 7, textTransform: "uppercase", letterSpacing: 1 }}>Right now</div>
+        {/* ── Smart recommendation banner ── */}
+        <div style={{
+          animation: cardVisible ? "fadeUp 0.4s 0.08s ease both" : "none",
+          background: `${recColors[rec.type]}12`,
+          border: `1px solid ${recColors[rec.type]}35`,
+          borderRadius: 16, padding: "14px 18px", marginBottom: 12,
+          display: "flex", alignItems: "center", gap: 12,
+        }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>{rec.icon}</span>
+          <p style={{ fontSize: 15, color: recColors[rec.type], fontWeight: 600, lineHeight: 1.4, fontFamily: T.body }}>
+            {rec.msg}
+          </p>
+        </div>
+
+        {/* ── Wait number card ── */}
+        <div style={{
+          animation: cardVisible ? "fadeUp 0.4s 0.15s ease both" : "none",
+          background: T.surface, borderRadius: 20, padding: "20px 22px",
+          border: `1px solid ${T.border}`, marginBottom: 12,
+        }}>
+          <div style={{ fontSize: 11, color: T.faint, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Hold time right now</div>
           {nowWait > 0 && status.human ? (
-            <>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-                <span style={{ fontSize: 50, fontWeight: 800, color: waitColor(nowWait) }}>{nowWait}</span>
-                <span style={{ fontSize: 17, color: T.muted }}>min estimated wait</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              <span style={{
+                fontSize: 64, fontWeight: 800, color: waitColor(nowWait), lineHeight: 1,
+                fontFamily: T.brand, transition: "color 0.3s",
+                textShadow: `0 0 40px ${waitColor(nowWait)}44`,
+              }}>{displayWait}</span>
+              <div>
+                <div style={{ fontSize: 18, color: T.muted, fontWeight: 500 }}>minutes</div>
+                <div style={{ fontSize: 12, color: T.faint, marginTop: 3 }}>estimated hold time</div>
               </div>
-              <p style={{ color: T.faint, fontSize: 13, marginTop: 7, display: "flex", alignItems: "center", gap: 5 }}>
-                <Users size={13} /> Community data · Updated hourly
-              </p>
-            </>
+            </div>
           ) : !status.human ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Bot size={26} color={T.faint} />
+              <Bot size={28} color={T.faint} />
               <div>
                 <p style={{ fontSize: 15, color: T.muted, fontWeight: 600 }}>No human agents right now</p>
-                <p style={{ fontSize: 13, color: T.faint, marginTop: 3 }}>Next available: {fmt(company.humanHours.start)} · {company.humanHours.days.includes(1) ? "weekdays" : "check hours above"}</p>
+                <p style={{ fontSize: 13, color: T.faint, marginTop: 3 }}>
+                  Next available: {fmt(company.humanHours.start)} · {company.humanHours.days.includes(1) ? "weekdays" : "check hours above"}
+                </p>
               </div>
             </div>
           ) : (
-            <p style={{ fontSize: 14, color: T.faint }}>No wait data for this hour yet</p>
+            <p style={{ fontSize: 14, color: T.faint }}>No data for this hour yet</p>
           )}
+          <div style={{ marginTop: 10, fontSize: 12, color: T.faint, display: "flex", alignItems: "center", gap: 5 }}>
+            <Users size={11} /> Based on community reports · refreshes hourly
+          </div>
         </div>
 
-        {/* Chart with Y-axis */}
-        <div style={{ background: T.surface, borderRadius: 18, padding: 22, border: `1px solid ${T.border}`, marginBottom: 12 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
-            <div style={{ fontSize: 11, color: T.faint, textTransform: "uppercase", letterSpacing: 1 }}>Wait times by hour</div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {[["#00e5a0","Low"],["#f59e0b","Medium"],["#ef4444","High"],["rgba(255,255,255,0.15)","Bot/Closed"]].map(([c,l]) => (
-                <span key={l} style={{ fontSize: 11, color: c, fontWeight: 700 }}>■ {l}</span>
+        {/* ── Chart card ── */}
+        <div style={{
+          animation: cardVisible ? "fadeUp 0.4s 0.22s ease both" : "none",
+          background: T.surface, borderRadius: 20, padding: "20px 22px",
+          border: `1px solid ${T.border}`, marginBottom: 12,
+        }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700, color: T.text, fontFamily: T.body }}>Best times to call today</div>
+              <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>Hover any bar to see the exact wait</div>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[["#00e5a0","Short"],["#f59e0b","Long"],["#ef4444","Very long"]].map(([c,l]) => (
+                <span key={l} style={{ fontSize: 11, color: c, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: c, display: "inline-block" }} />{l}
+                </span>
               ))}
             </div>
           </div>
-          {/* Y-axis + chart */}
-          <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-            {/* Y-axis labels */}
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: 80, paddingBottom: 4 }}>
+
+          {/* Y-axis + animated chart */}
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 12 }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: 90, paddingBottom: 4 }}>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>{max}m</span>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>{Math.round(max/2)}m</span>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>0</span>
             </div>
             <div style={{ flex: 1 }}>
-              <BarChart hourly={company.hourly} />
+              <BarChart hourly={company.hourly} animate />
             </div>
           </div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 7, paddingLeft: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, paddingLeft: 28 }}>
             {["12AM","6AM","12PM","6PM","11PM"].map(t => (
               <span key={t} style={{ fontSize: 11, color: T.faint }}>{t}</span>
             ))}
           </div>
         </div>
 
-        {/* Best / Worst */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 18 }}>
-          <div style={{ background: "rgba(0,229,160,0.06)", border: "1px solid rgba(0,229,160,0.18)", borderRadius: 14, padding: 16 }}>
-            <div style={{ fontSize: 12, color: T.teal, marginBottom: 9, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}><CheckCircle size={13} /> Best times</div>
-            {best.map(h => <div key={h} style={{ color: T.teal, fontSize: 13, marginBottom: 5, fontWeight: 600, opacity: 0.85 }}>{fmt(h)} — {company.hourly[h]} min</div>)}
+        {/* ── Best / Worst ── */}
+        <div style={{
+          animation: cardVisible ? "fadeUp 0.4s 0.3s ease both" : "none",
+          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18,
+        }}>
+          <div style={{ background: "rgba(0,229,160,0.07)", border: "1px solid rgba(0,229,160,0.2)", borderRadius: 16, padding: 16 }}>
+            <div style={{ fontSize: 12, color: T.teal, marginBottom: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+              <CheckCircle size={13} /> Call at these times
+            </div>
+            {best.map(h => (
+              <div key={h} style={{ color: T.teal, fontSize: 13, marginBottom: 6, fontWeight: 600 }}>
+                {fmt(h)} <span style={{ color: T.faint, fontWeight: 400 }}>· {company.hourly[h]} min</span>
+              </div>
+            ))}
           </div>
-          <div style={{ background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)", borderRadius: 14, padding: 16 }}>
-            <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 9, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}><AlertCircle size={13} /> Avoid these</div>
-            {worst.map(h => <div key={h} style={{ color: "#ef4444", fontSize: 13, marginBottom: 5, fontWeight: 600, opacity: 0.85 }}>{fmt(h)} — {company.hourly[h]} min</div>)}
+          <div style={{ background: "rgba(239,68,68,0.07)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 16, padding: 16 }}>
+            <div style={{ fontSize: 12, color: "#ef4444", marginBottom: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
+              <AlertCircle size={13} /> Skip these times
+            </div>
+            {worst.map(h => (
+              <div key={h} style={{ color: "#ef4444", fontSize: 13, marginBottom: 6, fontWeight: 600 }}>
+                {fmt(h)} <span style={{ color: T.faint, fontWeight: 400 }}>· {company.hourly[h]} min</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* CTAs */}
-        <a href={`tel:${company.phone.replace(/[^0-9]/g,"")}`} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", padding: "16px", borderRadius: 13, background: T.teal, color: "#0a0a0f", fontSize: 15, fontWeight: 800, textDecoration: "none", marginBottom: 11, fontFamily: "'Syne', sans-serif", boxSizing: "border-box" }}>
-          <Phone size={16} /> Call Now — {company.phone}
-        </a>
-        <button onClick={() => setModal(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "13px", borderRadius: 13, background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`, color: T.muted, fontSize: 14, cursor: "pointer", fontFamily: "'Syne', sans-serif", marginBottom: 16 }}>
-          <Share2 size={14} /> Share your wait time after calling
-        </button>
-        <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", padding: "11px", background: "rgba(255,255,255,0.02)", borderRadius: 11, border: `1px solid ${T.border}` }}>
-          {["Anonymous","No call recording","No personal data"].map(t => (
-            <span key={t} style={{ display: "flex", alignItems: "center", gap: 5, color: T.faint, fontSize: 12 }}><Shield size={12} color={T.faint} /> {t}</span>
-          ))}
+        {/* ── CTAs ── */}
+        <div style={{ animation: cardVisible ? "fadeUp 0.4s 0.38s ease both" : "none" }}>
+          <a
+            href={`tel:${company.phone.replace(/[^0-9]/g,"")}`}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+              width: "100%", padding: "17px", borderRadius: 14,
+              background: T.teal, color: "#0a0a0f", fontSize: 16, fontWeight: 800,
+              textDecoration: "none", marginBottom: 10, fontFamily: T.brand,
+              boxSizing: "border-box", transition: "transform 0.15s, box-shadow 0.15s",
+              boxShadow: "0 4px 24px rgba(0,229,160,0.25)",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,229,160,0.4)"; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,229,160,0.25)"; }}
+          >
+            <Phone size={17} /> Call {company.name} — {company.phone}
+          </a>
+          <button
+            onClick={() => setModal(true)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+              width: "100%", padding: "13px", borderRadius: 14,
+              background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+              color: T.muted, fontSize: 14, cursor: "pointer", fontFamily: T.body,
+              marginBottom: 16, transition: "background 0.2s, border-color 0.2s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = T.border; }}
+          >
+            <Share2 size={14} /> How long did you wait? Share it.
+          </button>
+          <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", padding: "10px", background: "rgba(255,255,255,0.02)", borderRadius: 11, border: `1px solid ${T.border}` }}>
+            {["Anonymous","No call recording","No personal data"].map(t => (
+              <span key={t} style={{ display: "flex", alignItems: "center", gap: 5, color: T.faint, fontSize: 12, fontFamily: T.body }}>
+                <Shield size={11} /> {t}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>
