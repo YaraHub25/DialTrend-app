@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import {
+  FlowPulseSVG, AnimatedBanner, AnimatedCard,
+  AnimatedWaitNumber, useWaitTimeAnimation
+} from "./DialTrendMotion";
+import {
   Search, Clock, Phone, Shield, ChevronLeft,
   TrendingUp, Users, CheckCircle, AlertCircle, Share2,
   Bot, UserCheck, Menu, X, Info, MessageSquare, HelpCircle, ArrowRight, Zap
@@ -216,6 +220,15 @@ function getAgentStatus(company) {
   return { human: false, label: company.botOnly || "Automated only right now" };
 }
 
+// Maps rec.type (CompanyDetail logic) → Framer Motion status string (DialTrendMotion)
+const REC_TO_STATUS = {
+  good:   "stable",
+  ok:     "warning",
+  bad:    "critical",
+  closed: "closed",
+  nodata: "closed",
+};
+
 // ─── Theme ────────────────────────────────────────────────────────────────────
 const T = {
   bg: "#0a0a0f", surface: "#13131a", border: "rgba(255,255,255,0.08)",
@@ -317,7 +330,8 @@ function BarChart({ hourly, compact = false, animate = false }) {
 }
 
 // ─── Live Wait Card (used in leaderboard) ─────────────────────────────────────
-function LiveWaitCard({ company, rank, onClick }) {
+// index prop drives the Framer spring stagger delay
+function LiveWaitCard({ company, rank, index, onClick }) {
   const nowH = new Date().getHours();
   const wait = company.hourly[nowH];
   const status = getAgentStatus(company);
@@ -325,53 +339,57 @@ function LiveWaitCard({ company, rank, onClick }) {
   const rankLabels = ["Good time to call", "Moderate wait", "Avoid right now"];
 
   return (
-    <button onClick={onClick} style={{
-      background: T.surface, border: `1px solid ${T.border}`,
-      borderRadius: 18, padding: "18px 20px", cursor: "pointer",
-      fontFamily: "'Syne', sans-serif", textAlign: "left", width: "100%",
-      transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 12,
-    }}
-      onMouseEnter={e => { e.currentTarget.style.borderColor = rankColors[rank]; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 32px ${rankColors[rank]}22`; }}
-      onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
-    >
-      {/* Header row */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, color: rankColors[rank], textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-            {rankLabels[rank]}
-          </div>
-          <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>{company.name}</div>
-          <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{company.category}</div>
-        </div>
-        {/* Big wait number */}
-        <div style={{ textAlign: "right" }}>
-          {wait > 0 && status.human ? (
-            <>
-              <div style={{ fontSize: 34, fontWeight: 800, color: rankColors[rank], lineHeight: 1 }}>{wait}</div>
-              <div style={{ fontSize: 11, color: T.faint }}>min wait</div>
-            </>
-          ) : (
-            <div style={{ fontSize: 13, color: T.faint, textAlign: "right" }}>
-              {status.human ? "No data" : "Bot only"}
+    // AnimatedCard gives each leaderboard card a spring entrance staggered by index
+    <AnimatedCard delay={0.05 * index} style={{ width: "100%" }}>
+      <button onClick={onClick} style={{
+        background: T.surface, border: `1px solid ${T.border}`,
+        borderRadius: 18, padding: "18px 20px", cursor: "pointer",
+        fontFamily: "'Syne', sans-serif", textAlign: "left", width: "100%",
+        transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 12,
+      }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = rankColors[rank]; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 32px ${rankColors[rank]}22`; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+      >
+        {/* Header row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: rankColors[rank], textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+              {rankLabels[rank]}
             </div>
-          )}
+            <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>{company.name}</div>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{company.category}</div>
+          </div>
+          {/* FlowPulseSVG replaces the static wait number — animates based on live wait */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <FlowPulseSVG waitTime={wait} isHuman={status.human} size={44} />
+            {wait > 0 && status.human ? (
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 26, fontWeight: 800, color: rankColors[rank], lineHeight: 1 }}>{wait}</div>
+                <div style={{ fontSize: 11, color: T.faint }}>min wait</div>
+              </div>
+            ) : (
+              <div style={{ fontSize: 13, color: T.faint, textAlign: "right" }}>
+                {status.human ? "No data" : "Bot only"}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Mini chart */}
-      <BarChart hourly={company.hourly} compact />
+        {/* Mini chart */}
+        <BarChart hourly={company.hourly} compact />
 
-      {/* Bottom row */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: status.human ? T.teal : T.faint }}>
-          {status.human ? <UserCheck size={11} /> : <Bot size={11} />}
-          {status.human ? "Human available" : "Automated only"}
+        {/* Bottom row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: status.human ? T.teal : T.faint }}>
+            {status.human ? <UserCheck size={11} /> : <Bot size={11} />}
+            {status.human ? "Human available" : "Automated only"}
+          </div>
+          <div style={{ fontSize: 12, color: rankColors[rank], fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
+            See full day <ArrowRight size={12} />
+          </div>
         </div>
-        <div style={{ fontSize: 12, color: rankColors[rank], fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-          See full day <ArrowRight size={12} />
-        </div>
-      </div>
-    </button>
+      </button>
+    </AnimatedCard>
   );
 }
 
@@ -553,39 +571,25 @@ function CompanyDetail({ company, onBack }) {
   const max = Math.max(...company.hourly);
   const status = getAgentStatus(company);
 
-  // Count-up animation for wait number
-  const [displayWait, setDisplayWait] = useState(0);
-  const [cardVisible, setCardVisible] = useState(false);
-  useEffect(() => {
-    const t = setTimeout(() => setCardVisible(true), 100);
-    return () => clearTimeout(t);
-  }, []);
-  useEffect(() => {
-    if (nowWait <= 0) return;
-    let start = 0;
-    const step = Math.ceil(nowWait / 20);
-    const timer = setInterval(() => {
-      start += step;
-      if (start >= nowWait) { setDisplayWait(nowWait); clearInterval(timer); }
-      else setDisplayWait(start);
-    }, 40);
-    return () => clearInterval(timer);
-  }, [nowWait]);
-
-  // Smart recommendation in plain English
+  // ── Smart recommendation in plain English ──────────────────────────────────
   const getRecommendation = () => {
     if (!status.human) {
       const nextH = company.humanHours.start;
-      return { type: "closed", msg: `No one's available right now. Try again at ${fmt(nextH)}.`, icon: "🕐" };
+      return { type: "closed", msg: `No one's available right now. Try again at ${fmt(nextH)}.` };
     }
-    if (nowWait === 0) return { type: "nodata", msg: "No wait data for this hour yet.", icon: "📊" };
-    if (nowWait <= 8) return { type: "good", msg: `Good time to call — short wait right now.`, icon: "✅" };
-    if (nowWait <= 18) return { type: "ok", msg: `Moderate wait. If it's urgent, go ahead.`, icon: "⏳" };
+    if (nowWait === 0) return { type: "nodata", msg: "No wait data for this hour yet." };
+    if (nowWait <= 8)  return { type: "good",   msg: "Good time to call — short wait right now." };
+    if (nowWait <= 18) return { type: "ok",     msg: "Moderate wait. If it's urgent, go ahead." };
     const bestH = best[0];
-    return { type: "bad", msg: `Long wait right now. Try calling at ${fmt(bestH)} instead.`, icon: "⚠️" };
+    return { type: "bad", msg: `Long wait right now. Try calling at ${fmt(bestH)} instead.` };
   };
   const rec = getRecommendation();
-  const recColors = { good: T.teal, ok: "#f59e0b", bad: "#ef4444", closed: T.faint, nodata: T.faint };
+
+  // Map rec.type → AnimatedBanner status string
+  const bannerStatus = REC_TO_STATUS[rec.type] || "stable";
+
+  // useWaitTimeAnimation gives us the same status for the FlowPulseSVG on the wait card
+  const waitStatus = useWaitTimeAnimation(nowWait, status.human);
 
   return (
     <div style={{ minHeight: "100vh", background: T.bg, fontFamily: T.body, color: T.text, overflowX: "hidden", width: "100%" }}>
@@ -603,8 +607,8 @@ function CompanyDetail({ company, onBack }) {
       <div style={{ maxWidth: 580, margin: "0 auto", padding: "24px 18px 72px" }}>
 
         {/* ── Company identity ── */}
-        <div style={{
-          animation: cardVisible ? "fadeUp 0.4s ease both" : "none",
+        {/* AnimatedCard replaces the manual cardVisible + CSS fadeUp approach */}
+        <AnimatedCard delay={0} style={{
           background: T.surface, borderRadius: 20, padding: "20px 22px",
           border: `1px solid ${T.border}`, marginBottom: 12,
         }}>
@@ -627,36 +631,28 @@ function CompanyDetail({ company, onBack }) {
           <div style={{ marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.2)", display: "flex", alignItems: "center", gap: 5 }}>
             <Users size={10} /> {company.source}
           </div>
-        </div>
+        </AnimatedCard>
 
         {/* ── Smart recommendation banner ── */}
-        <div style={{
-          animation: cardVisible ? "fadeUp 0.4s 0.08s ease both" : "none",
-          background: `${recColors[rec.type]}12`,
-          border: `1px solid ${recColors[rec.type]}35`,
-          borderRadius: 16, padding: "14px 18px", marginBottom: 12,
-          display: "flex", alignItems: "center", gap: 12,
-        }}>
-          <span style={{ fontSize: 22, lineHeight: 1 }}>{rec.icon}</span>
-          <p style={{ fontSize: 15, color: recColors[rec.type], fontWeight: 600, lineHeight: 1.4, fontFamily: T.body }}>
-            {rec.msg}
-          </p>
-        </div>
+        {/* AnimatedBanner handles its own spring color transition + FlowPulseSVG */}
+        <AnimatedCard delay={0.08}>
+          <AnimatedBanner status={bannerStatus} message={rec.msg} />
+        </AnimatedCard>
 
         {/* ── Wait number card ── */}
-        <div style={{
-          animation: cardVisible ? "fadeUp 0.4s 0.15s ease both" : "none",
+        <AnimatedCard delay={0.15} style={{
           background: T.surface, borderRadius: 20, padding: "20px 22px",
           border: `1px solid ${T.border}`, marginBottom: 12,
         }}>
-          <div style={{ fontSize: 11, color: T.faint, marginBottom: 10, textTransform: "uppercase", letterSpacing: 1 }}>Hold time right now</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: T.faint, textTransform: "uppercase", letterSpacing: 1 }}>Hold time right now</div>
+            {/* FlowPulseSVG in the corner of the wait card — speed matches urgency */}
+            <FlowPulseSVG waitTime={nowWait} isHuman={status.human} size={36} />
+          </div>
           {nowWait > 0 && status.human ? (
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span style={{
-                fontSize: 64, fontWeight: 800, color: waitColor(nowWait), lineHeight: 1,
-                fontFamily: T.brand, transition: "color 0.3s",
-                textShadow: `0 0 40px ${waitColor(nowWait)}44`,
-              }}>{displayWait}</span>
+              {/* AnimatedWaitNumber replaces the manual setInterval count-up */}
+              <AnimatedWaitNumber value={nowWait} color={waitColor(nowWait)} />
               <div>
                 <div style={{ fontSize: 18, color: T.muted, fontWeight: 500 }}>minutes</div>
                 <div style={{ fontSize: 12, color: T.faint, marginTop: 3 }}>estimated hold time</div>
@@ -678,11 +674,10 @@ function CompanyDetail({ company, onBack }) {
           <div style={{ marginTop: 10, fontSize: 12, color: T.faint, display: "flex", alignItems: "center", gap: 5 }}>
             <Users size={11} /> Based on community reports · refreshes hourly
           </div>
-        </div>
+        </AnimatedCard>
 
         {/* ── Chart card ── */}
-        <div style={{
-          animation: cardVisible ? "fadeUp 0.4s 0.22s ease both" : "none",
+        <AnimatedCard delay={0.22} style={{
           background: T.surface, borderRadius: 20, padding: "20px 22px",
           border: `1px solid ${T.border}`, marginBottom: 12,
         }}>
@@ -716,11 +711,10 @@ function CompanyDetail({ company, onBack }) {
               <span key={t} style={{ fontSize: 11, color: T.faint }}>{t}</span>
             ))}
           </div>
-        </div>
+        </AnimatedCard>
 
         {/* ── Best / Worst ── */}
-        <div style={{
-          animation: cardVisible ? "fadeUp 0.4s 0.3s ease both" : "none",
+        <AnimatedCard delay={0.30} style={{
           display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18,
         }}>
           <div style={{ background: "rgba(0,229,160,0.07)", border: "1px solid rgba(0,229,160,0.2)", borderRadius: 16, padding: 16 }}>
@@ -743,10 +737,10 @@ function CompanyDetail({ company, onBack }) {
               </div>
             ))}
           </div>
-        </div>
+        </AnimatedCard>
 
         {/* ── CTAs ── */}
-        <div style={{ animation: cardVisible ? "fadeUp 0.4s 0.38s ease both" : "none" }}>
+        <AnimatedCard delay={0.38}>
           <a
             href={`tel:${company.phone.replace(/[^0-9]/g,"")}`}
             style={{
@@ -783,7 +777,8 @@ function CompanyDetail({ company, onBack }) {
               </span>
             ))}
           </div>
-        </div>
+        </AnimatedCard>
+
       </div>
     </div>
   );
@@ -794,12 +789,12 @@ export default function DialTrendApp() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  // ← AUTO-SHOW on first visit: just change false → true
+  // Auto-show onboarding on first visit — change true → false to disable
   const [showOnboarding, setShowOnboarding] = useState(true);
 
   const nowH = new Date().getHours();
 
-  // Compute live leaderboard: companies with human agents + actual wait data, sorted by wait ascending
+  // Compute live leaderboard: companies with human agents + actual wait data, sorted ascending
   const liveRanked = COMPANIES
     .filter(c => {
       const status = getAgentStatus(c);
@@ -863,7 +858,7 @@ export default function DialTrendApp() {
           </div>
         </header>
 
-        {/* Hero — compact, action-focused */}
+        {/* Hero */}
         <section style={{ textAlign: "center", padding: "52px 20px 36px", background: "radial-gradient(ellipse 70% 40% at 50% 0%, rgba(0,229,160,0.07) 0%, transparent 70%)" }}>
           <h1 className="fu1" style={{ fontSize: "clamp(36px, 5.5vw, 62px)", fontWeight: 800, lineHeight: 1.1, maxWidth: 560, margin: "0 auto 16px", letterSpacing: "-1.5px", color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Before you call,{" "}
@@ -917,16 +912,14 @@ export default function DialTrendApp() {
           </div>
         </section>
 
-        {/* ★ LIVE LEADERBOARD — the new hook ★ */}
+        {/* ★ LIVE LEADERBOARD ★ */}
         <section style={{ padding: "40px 20px 48px", borderTop: `1px solid ${T.border}`, background: "rgba(0,229,160,0.02)" }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
-            {/* Section header with live indicator */}
             <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10 }}>
               <div className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Who to call right now · {fmt(nowH)}</span>
             </div>
 
-            {/* Green dot legend — visible above the fold */}
             <div style={{ display: "flex", justifyContent: "center", gap: 18, marginBottom: 24, flexWrap: "wrap" }}>
               <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.teal, fontFamily: T.body }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, display: "inline-block" }} />
@@ -938,10 +931,10 @@ export default function DialTrendApp() {
               </span>
             </div>
 
-            {/* Three ranked cards */}
+            {/* index prop added — drives AnimatedCard stagger inside LiveWaitCard */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
               {leaderboard.map((company, i) => (
-                <LiveWaitCard key={company.id} company={company} rank={i} onClick={() => setSelected(company)} />
+                <LiveWaitCard key={company.id} company={company} rank={i} index={i} onClick={() => setSelected(company)} />
               ))}
             </div>
 
