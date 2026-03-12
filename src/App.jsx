@@ -343,7 +343,7 @@ function LiveWaitCard({ company, rank, onClick }) {
           {status.human ? "Human available" : "Automated only"}
         </div>
         <div style={{ fontSize: 12, color: rankColors[rank], fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-          Tap to call <ArrowRight size={12} />
+          See full day <ArrowRight size={12} />
         </div>
       </div>
     </button>
@@ -727,11 +727,11 @@ export default function DialTrendApp() {
           <h1 className="fu1" style={{ fontSize: "clamp(36px, 5.5vw, 62px)", fontWeight: 800, lineHeight: 1.1, maxWidth: 560, margin: "0 auto 16px", letterSpacing: "-1.5px", color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Before you call,{" "}
             <span style={{ background: "linear-gradient(90deg, #00e5a0, #00c4ff)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              find a real person
+              find a real person.
             </span>
           </h1>
           <p className="fu2" style={{ fontSize: 17, color: T.muted, maxWidth: 380, margin: "0 auto 32px", lineHeight: 1.7, fontFamily: "'Plus Jakarta Sans', sans-serif", fontWeight: 400 }}>
-            See when hold times are shortest and skip the bot.
+            Skip the bot. Reach a human faster.
           </p>
 
           {/* Search */}
@@ -780,9 +780,21 @@ export default function DialTrendApp() {
         <section style={{ padding: "40px 20px 48px", borderTop: `1px solid ${T.border}`, background: "rgba(0,229,160,0.02)" }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
             {/* Section header with live indicator */}
-            <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 24 }}>
+            <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10 }}>
               <div className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Who to call right now · {fmt(nowH)}</span>
+            </div>
+
+            {/* Green dot legend — visible above the fold */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 18, marginBottom: 24, flexWrap: "wrap" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.teal, fontFamily: T.body }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, display: "inline-block" }} />
+                Human agent available now
+              </span>
+              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.faint, fontFamily: T.body }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "inline-block" }} />
+                Bot or closed
+              </span>
             </div>
 
             {/* Three ranked cards */}
@@ -821,7 +833,6 @@ export default function DialTrendApp() {
               );
             })}
           </div>
-          <p style={{ fontSize: 12, color: T.faint }}>Green dot = human agents available right now</p>
         </section>
 
         {/* Footer */}
