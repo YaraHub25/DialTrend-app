@@ -233,7 +233,8 @@ const REC_TO_STATUS = {
 const T = {
   bg: "#0a0a0f", surface: "#13131a", border: "rgba(255,255,255,0.08)",
   teal: "#00e5a0", tealDim: "rgba(0,229,160,0.10)", tealBorder: "rgba(0,229,160,0.25)",
-  text: "#f1f5f9", muted: "rgba(255,255,255,0.55)", faint: "rgba(255,255,255,0.22)",
+  text: "#f1f5f9", muted: "#c8d4e0", faint: "#8b9ab0",
+  // ↑ WCAG fix: both values now pass 4.5:1 contrast on #0a0a0f and #13131a
   body: "'Plus Jakarta Sans', sans-serif",
   brand: "'Syne', sans-serif",
 };
@@ -335,59 +336,62 @@ function LiveWaitCard({ company, rank, index, onClick }) {
   const nowH = new Date().getHours();
   const wait = company.hourly[nowH];
   const status = getAgentStatus(company);
-  const rankColors = ["#00e5a0", "#f59e0b", "#ef4444"];
-  const rankLabels = ["Good time to call", "Moderate wait", "Avoid right now"];
+
+  // Binary action labels — the whole point of the card is "should I call now?"
+  const RANK = [
+    { label: "CALL NOW",        color: "#00e5a0", bg: "rgba(0,229,160,0.15)",  border: "rgba(0,229,160,0.35)" },
+    { label: "CONSIDER WAIT",   color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)" },
+    { label: "AVOID RIGHT NOW", color: "#ef4444", bg: "rgba(239,68,68,0.12)",  border: "rgba(239,68,68,0.3)" },
+  ];
+  const r = RANK[rank];
 
   return (
-    // AnimatedCard gives each leaderboard card a spring entrance staggered by index
     <AnimatedCard delay={0.05 * index} style={{ width: "100%" }}>
       <button onClick={onClick} style={{
         background: T.surface, border: `1px solid ${T.border}`,
         borderRadius: 18, padding: "18px 20px", cursor: "pointer",
-        fontFamily: "'Syne', sans-serif", textAlign: "left", width: "100%",
-        transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 12,
+        fontFamily: T.brand, textAlign: "left", width: "100%",
+        transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 14,
       }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = rankColors[rank]; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 32px ${rankColors[rank]}22`; }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = r.color; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 32px ${r.color}22`; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
       >
-        {/* Header row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-          <div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: rankColors[rank], textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-              {rankLabels[rank]}
-            </div>
-            <div style={{ fontSize: 17, fontWeight: 800, color: T.text }}>{company.name}</div>
-            <div style={{ fontSize: 12, color: T.faint, marginTop: 2 }}>{company.category}</div>
-          </div>
-          {/* FlowPulseSVG replaces the static wait number — animates based on live wait */}
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-            <FlowPulseSVG waitTime={wait} isHuman={status.human} size={44} />
-            {wait > 0 && status.human ? (
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: 26, fontWeight: 800, color: rankColors[rank], lineHeight: 1 }}>{wait}</div>
-                <div style={{ fontSize: 11, color: T.faint }}>min wait</div>
-              </div>
-            ) : (
-              <div style={{ fontSize: 13, color: T.faint, textAlign: "right" }}>
-                {status.human ? "No data" : "Bot only"}
-              </div>
-            )}
-          </div>
+        {/* 1 — Binary status badge */}
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 7,
+          padding: "5px 12px", borderRadius: 20, alignSelf: "flex-start",
+          background: r.bg, border: `1px solid ${r.border}`,
+        }}>
+          <FlowPulseSVG waitTime={wait} isHuman={status.human} size={14} />
+          <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.2 }}>{r.label}</span>
         </div>
 
-        {/* Mini chart */}
+        {/* 2 — Company name */}
+        <div>
+          <div style={{ fontSize: 19, fontWeight: 800, color: T.text, lineHeight: 1.2 }}>{company.name}</div>
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 3, fontFamily: T.body }}>{company.category}</div>
+        </div>
+
+        {/* 3 — Wait metric inline: "26 min wait" not stacked */}
+        {wait > 0 && status.human ? (
+          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <span style={{ fontSize: 36, fontWeight: 800, color: r.color, lineHeight: 1 }}>{wait}</span>
+            <span style={{ fontSize: 16, fontWeight: 600, color: T.muted, fontFamily: T.body }}>min wait</span>
+          </div>
+        ) : (
+          <div style={{ fontSize: 14, color: T.faint, fontFamily: T.body }}>
+            {status.human ? "No data this hour" : "Bot only right now"}
+          </div>
+        )}
+
+        {/* 4 — Human status — one clear line */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? T.teal : T.faint }}>
+          {status.human ? <UserCheck size={13} /> : <Bot size={13} />}
+          {status.human ? "Human agent available" : "Automated only"}
+        </div>
+
+        {/* 5 — Mini chart — supporting context */}
         <BarChart hourly={company.hourly} compact />
-
-        {/* Bottom row */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: status.human ? T.teal : T.faint }}>
-            {status.human ? <UserCheck size={11} /> : <Bot size={11} />}
-            {status.human ? "Human available" : "Automated only"}
-          </div>
-          <div style={{ fontSize: 12, color: rankColors[rank], fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-            See full day <ArrowRight size={12} />
-          </div>
-        </div>
       </button>
     </AnimatedCard>
   );
@@ -650,30 +654,29 @@ function CompanyDetail({ company, onBack }) {
             <FlowPulseSVG waitTime={nowWait} isHuman={status.human} size={36} />
           </div>
           {nowWait > 0 && status.human ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              {/* AnimatedWaitNumber replaces the manual setInterval count-up */}
-              <AnimatedWaitNumber value={nowWait} color={waitColor(nowWait)} />
-              <div>
-                <div style={{ fontSize: 18, color: T.muted, fontWeight: 500 }}>minutes</div>
-                <div style={{ fontSize: 12, color: T.faint, marginTop: 3 }}>estimated hold time</div>
+            // Inline metric style: "26 min wait" on one line, secondary label below
+            <div>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <AnimatedWaitNumber value={nowWait} color={waitColor(nowWait)} />
+                <span style={{ fontSize: 22, fontWeight: 600, color: T.muted, fontFamily: T.body }}>min wait</span>
+              </div>
+              <div style={{ marginTop: 6, fontSize: 13, color: T.faint, fontFamily: T.body, display: "flex", alignItems: "center", gap: 5 }}>
+                <Users size={11} /> Estimated wait · based on community reports
               </div>
             </div>
           ) : !status.human ? (
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <Bot size={28} color={T.faint} />
+              <Bot size={26} color={T.faint} />
               <div>
-                <p style={{ fontSize: 15, color: T.muted, fontWeight: 600 }}>No human agents right now</p>
-                <p style={{ fontSize: 13, color: T.faint, marginTop: 3 }}>
+                <p style={{ fontSize: 15, color: T.muted, fontWeight: 600, fontFamily: T.body }}>No human agents right now</p>
+                <p style={{ fontSize: 13, color: T.faint, marginTop: 3, fontFamily: T.body }}>
                   Next available: {fmt(company.humanHours.start)} · {company.humanHours.days.includes(1) ? "weekdays" : "check hours above"}
                 </p>
               </div>
             </div>
           ) : (
-            <p style={{ fontSize: 14, color: T.faint }}>No data for this hour yet</p>
+            <p style={{ fontSize: 14, color: T.faint, fontFamily: T.body }}>No data for this hour yet</p>
           )}
-          <div style={{ marginTop: 10, fontSize: 12, color: T.faint, display: "flex", alignItems: "center", gap: 5 }}>
-            <Users size={11} /> Based on community reports · refreshes hourly
-          </div>
         </AnimatedCard>
 
         {/* ── Chart card ── */}
@@ -901,14 +904,17 @@ export default function DialTrendApp() {
             )}
           </div>
 
-          {/* Quick buttons */}
-          <div className="fu4" style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 9, marginTop: 12 }}>
-            {QUICK.map(name => {
+          {/* Quick chips — 3 most common + More */}
+          <div className="fu4" style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+            {["Netflix", "Amazon", "AT&T"].map(name => {
               const c = COMPANIES.find(x => x.name === name);
               return (
-                <button key={name} className="ct-quick" onClick={() => setSelected(c)} style={{ padding: "7px 15px", borderRadius: 30, border: `1px solid ${T.border}`, background: "rgba(255,255,255,0.04)", color: T.muted, fontSize: 13, cursor: "pointer", fontFamily: "'Syne', sans-serif", fontWeight: 600, transition: "all 0.2s" }}>{name}</button>
+                <button key={name} className="ct-quick" onClick={() => setSelected(c)} style={{ padding: "7px 16px", borderRadius: 30, border: `1px solid ${T.border}`, background: "rgba(255,255,255,0.04)", color: T.muted, fontSize: 13, cursor: "pointer", fontFamily: T.brand, fontWeight: 600, transition: "all 0.2s" }}>{name}</button>
               );
             })}
+            <button className="ct-quick" onClick={() => document.getElementById("browse-all")?.scrollIntoView({ behavior: "smooth" })} style={{ padding: "7px 16px", borderRadius: 30, border: `1px solid ${T.border}`, background: "rgba(255,255,255,0.04)", color: T.muted, fontSize: 13, cursor: "pointer", fontFamily: T.brand, fontWeight: 600, transition: "all 0.2s", display: "flex", alignItems: "center", gap: 5 }}>
+              More <ArrowRight size={12} />
+            </button>
           </div>
         </section>
 
@@ -918,17 +924,6 @@ export default function DialTrendApp() {
             <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10 }}>
               <div className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Who to call right now · {fmt(nowH)}</span>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "center", gap: 18, marginBottom: 24, flexWrap: "wrap" }}>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.teal, fontFamily: T.body }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, display: "inline-block" }} />
-                Human agent available now
-              </span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.faint, fontFamily: T.body }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.2)", display: "inline-block" }} />
-                Bot or closed
-              </span>
             </div>
 
             {/* index prop added — drives AnimatedCard stagger inside LiveWaitCard */}
@@ -953,16 +948,27 @@ export default function DialTrendApp() {
           </div>
         </div>
 
-        {/* Browse all */}
-        <section style={{ padding: "40px 20px 56px", background: T.surface, textAlign: "center" }}>
-          <p style={{ fontSize: 11, color: T.faint, textTransform: "uppercase", letterSpacing: 2, marginBottom: 16 }}>Browse all 20 companies</p>
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 9, maxWidth: 680, margin: "0 auto 12px" }}>
+        {/* Browse all — collapsed list, not a chip dump */}
+        <section id="browse-all" style={{ padding: "32px 20px 48px", background: T.surface, textAlign: "center" }}>
+          <p style={{ fontSize: 11, color: T.faint, textTransform: "uppercase", letterSpacing: 2, marginBottom: 20, fontFamily: T.body }}>All 20 companies</p>
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, maxWidth: 640, margin: "0 auto" }}>
             {COMPANIES.map(c => {
-              const status = getAgentStatus(c);
+              const agentStatus = getAgentStatus(c);
+              const nowWait = c.hourly[new Date().getHours()];
               return (
-                <button key={c.id} className="ct-card" onClick={() => setSelected(c)} style={{ padding: "9px 16px", borderRadius: 11, border: `1px solid ${T.border}`, background: "rgba(255,255,255,0.03)", color: T.muted, fontSize: 13, cursor: "pointer", fontFamily: "'Syne', sans-serif", fontWeight: 600, transition: "all 0.25s", display: "flex", alignItems: "center", gap: 7 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: status.human ? T.teal : "rgba(255,255,255,0.2)", flexShrink: 0 }} />
+                <button key={c.id} className="ct-card" onClick={() => setSelected(c)} style={{
+                  padding: "8px 14px", borderRadius: 10,
+                  border: `1px solid ${T.border}`,
+                  background: "rgba(255,255,255,0.025)",
+                  color: T.muted, fontSize: 13, cursor: "pointer",
+                  fontFamily: T.body, fontWeight: 500,
+                  transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: agentStatus.human ? T.teal : "rgba(255,255,255,0.18)", flexShrink: 0 }} />
                   {c.name}
+                  {agentStatus.human && nowWait > 0 && (
+                    <span style={{ fontSize: 11, color: T.faint, fontWeight: 400 }}>{nowWait}m</span>
+                  )}
                 </button>
               );
             })}
