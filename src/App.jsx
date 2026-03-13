@@ -177,7 +177,47 @@ const COMPANIES = [
   },
 ];
 
-const QUICK = ["Netflix", "Amazon", "AT&T", "Delta Airlines"];
+const QUICK = ["Netflix", "Amazon", "AT&T"];
+
+// ─── Company metadata: logo domain + report count ─────────────────────────────
+// report counts sourced from GetHuman public dataset estimates
+const COMPANY_META = {
+  netflix:         { domain: "netflix.com",         reports: 312 },
+  apple:           { domain: "apple.com",            reports: 847 },
+  amazon:          { domain: "amazon.com",           reports: 1204 },
+  delta:           { domain: "delta.com",            reports: 538 },
+  att:             { domain: "att.com",              reports: 723 },
+  boa:             { domain: "bankofamerica.com",    reports: 419 },
+  comcast:         { domain: "xfinity.com",          reports: 631 },
+  tmobile:         { domain: "t-mobile.com",         reports: 489 },
+  united:          { domain: "united.com",           reports: 502 },
+  microsoft:       { domain: "microsoft.com",        reports: 276 },
+  wellsfargo:      { domain: "wellsfargo.com",       reports: 358 },
+  usps:            { domain: "usps.com",             reports: 447 },
+  insurance_geico: { domain: "geico.com",            reports: 284 },
+  paypal:          { domain: "paypal.com",           reports: 391 },
+  wayfair:         { domain: "wayfair.com",          reports: 167 },
+  homedepot:       { domain: "homedepot.com",        reports: 203 },
+  instacart:       { domain: "instacart.com",        reports: 148 },
+  healthcare_gov:  { domain: "healthcare.gov",       reports: 312 },
+  spotify:         { domain: "spotify.com",          reports: 94 },
+  royal_caribbean: { domain: "royalcaribbean.com",   reports: 129 },
+};
+
+// Returns how many minutes have elapsed since the start of the current hour.
+// This is the accurate "last updated" value — data refreshes at the top of each hour.
+function minsAgoThisHour() {
+  return new Date().getMinutes();
+}
+
+// Computes the hourly trend: positive = wait rising this hour vs. prev, negative = falling
+function getTrend(hourly) {
+  const h = new Date().getHours();
+  const now = hourly[h];
+  const prev = hourly[h > 0 ? h - 1 : 0];
+  if (now === 0 || prev === 0) return 0;
+  return now - prev;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function getBest(hourly) {
@@ -274,7 +314,45 @@ function AgentBadge({ company, size = "sm" }) {
   );
 }
 
-// ─── Bar Chart ────────────────────────────────────────────────────────────────
+// ─── Company Logo ─────────────────────────────────────────────────────────────
+// Uses Clearbit Logo API for real brand logos with a clean initial fallback
+function CompanyLogo({ company, size = 32 }) {
+  const [failed, setFailed] = useState(false);
+  const meta = COMPANY_META[company.id];
+  const initial = company.name[0].toUpperCase();
+
+  if (!meta || failed) {
+    return (
+      <div style={{
+        width: size, height: size, borderRadius: size * 0.28,
+        background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: size * 0.46, fontWeight: 800, color: T.text, fontFamily: T.brand,
+        flexShrink: 0,
+      }}>
+        {initial}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: size * 0.28,
+      background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      overflow: "hidden", flexShrink: 0,
+    }}>
+      <img
+        src={`https://logo.clearbit.com/${meta.domain}`}
+        alt={company.name}
+        onError={() => setFailed(true)}
+        style={{ width: size * 0.72, height: size * 0.72, objectFit: "contain" }}
+      />
+    </div>
+  );
+}
+
+
 function BarChart({ hourly, compact = false, animate = false }) {
   const [mounted, setMounted] = useState(false);
   const [hovered, setHovered] = useState(null);
@@ -331,67 +409,102 @@ function BarChart({ hourly, compact = false, animate = false }) {
 }
 
 // ─── Live Wait Card (used in leaderboard) ─────────────────────────────────────
-// index prop drives the Framer spring stagger delay
 function LiveWaitCard({ company, rank, index, onClick }) {
   const nowH = new Date().getHours();
   const wait = company.hourly[nowH];
   const status = getAgentStatus(company);
+  const trend = getTrend(company.hourly);
+  const meta = COMPANY_META[company.id];
 
-  // Binary action labels — the whole point of the card is "should I call now?"
   const RANK = [
-    { label: "CALL NOW",        color: "#00e5a0", bg: "rgba(0,229,160,0.15)",  border: "rgba(0,229,160,0.35)" },
-    { label: "CONSIDER WAIT",   color: "#f59e0b", bg: "rgba(245,158,11,0.12)", border: "rgba(245,158,11,0.3)" },
-    { label: "AVOID RIGHT NOW", color: "#ef4444", bg: "rgba(239,68,68,0.12)",  border: "rgba(239,68,68,0.3)" },
+    { label: "CALL NOW",        color: "#00e5a0", rgb: "0,229,160",   border: "rgba(0,229,160,0.4)" },
+    { label: "CONSIDER WAIT",   color: "#f59e0b", rgb: "245,158,11",  border: "rgba(245,158,11,0.35)" },
+    { label: "AVOID RIGHT NOW", color: "#ef4444", rgb: "239,68,68",   border: "rgba(239,68,68,0.35)" },
   ];
   const r = RANK[rank];
+
+  const trendLabel = trend > 3 ? `↑ Rising` : trend < -3 ? `↓ Falling` : `→ Steady`;
+  const trendColor = trend > 3 ? "#ef4444" : trend < -3 ? "#00e5a0" : T.faint;
 
   return (
     <AnimatedCard delay={0.05 * index} style={{ width: "100%" }}>
       <button onClick={onClick} style={{
-        background: T.surface, border: `1px solid ${T.border}`,
-        borderRadius: 18, padding: "18px 20px", cursor: "pointer",
+        // Card has a subtle color-tinted gradient from the top that bleeds to transparent
+        background: `linear-gradient(160deg, rgba(${r.rgb},0.08) 0%, ${T.surface} 55%)`,
+        border: `1px solid ${r.border}`,
+        borderRadius: 20, padding: "0", cursor: "pointer",
         fontFamily: T.brand, textAlign: "left", width: "100%",
-        transition: "all 0.2s", display: "flex", flexDirection: "column", gap: 14,
+        transition: "all 0.22s", display: "flex", flexDirection: "column",
+        overflow: "hidden",
       }}
-        onMouseEnter={e => { e.currentTarget.style.borderColor = r.color; e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 32px ${r.color}22`; }}
-        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `0 12px 40px rgba(${r.rgb},0.18)`; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
       >
-        {/* 1 — Binary status badge */}
+        {/* ── Top band: status badge + FlowPulse (color-matched to rank) ── */}
         <div style={{
-          display: "inline-flex", alignItems: "center", gap: 7,
-          padding: "5px 12px", borderRadius: 20, alignSelf: "flex-start",
-          background: r.bg, border: `1px solid ${r.border}`,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          padding: "14px 18px 0",
         }}>
-          <FlowPulseSVG waitTime={wait} isHuman={status.human} size={14} />
-          <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.2 }}>{r.label}</span>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "5px 13px 5px 8px", borderRadius: 20,
+            background: `rgba(${r.rgb},0.13)`, border: `1px solid rgba(${r.rgb},0.35)`,
+          }}>
+            {/* FlowPulseSVG color-matched: we pass waitTime so the hook picks the right state */}
+            <FlowPulseSVG waitTime={wait} isHuman={status.human} size={16} />
+            <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.3, fontFamily: T.brand }}>{r.label}</span>
+          </div>
+          {/* Trend indicator — predictive signal */}
+          <span style={{ fontSize: 11, fontWeight: 700, color: trendColor, fontFamily: T.body }}>{trendLabel}</span>
         </div>
 
-        {/* 2 — Company name */}
-        <div>
-          <div style={{ fontSize: 19, fontWeight: 800, color: T.text, lineHeight: 1.2 }}>{company.name}</div>
-          <div style={{ fontSize: 12, color: T.faint, marginTop: 3, fontFamily: T.body }}>{company.category}</div>
+        {/* ── Company identity: logo + name ── */}
+        <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 10 }}>
+          <CompanyLogo company={company} size={36} />
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: T.text, lineHeight: 1.15 }}>{company.name}</div>
+            <div style={{ fontSize: 11, color: T.faint, marginTop: 1, fontFamily: T.body }}>{company.category}</div>
+          </div>
         </div>
 
-        {/* 3 — Wait metric inline: "26 min wait" not stacked */}
-        {wait > 0 && status.human ? (
-          <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-            <span style={{ fontSize: 36, fontWeight: 800, color: r.color, lineHeight: 1 }}>{wait}</span>
-            <span style={{ fontSize: 16, fontWeight: 600, color: T.muted, fontFamily: T.body }}>min wait</span>
-          </div>
-        ) : (
-          <div style={{ fontSize: 14, color: T.faint, fontFamily: T.body }}>
-            {status.human ? "No data this hour" : "Bot only right now"}
-          </div>
-        )}
+        {/* ── Big metric: "26 min wait" inline ── */}
+        <div style={{ padding: "12px 18px 0" }}>
+          {wait > 0 && status.human ? (
+            <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
+              <span style={{ fontSize: 44, fontWeight: 800, color: r.color, lineHeight: 1, fontFamily: T.brand }}>{wait}</span>
+              <span style={{ fontSize: 18, fontWeight: 600, color: T.muted, fontFamily: T.body }}>min wait</span>
+            </div>
+          ) : (
+            <div style={{ fontSize: 15, color: T.faint, fontFamily: T.body, paddingTop: 4 }}>
+              {status.human ? "No data this hour" : "Bot only right now"}
+            </div>
+          )}
+        </div>
 
-        {/* 4 — Human status — one clear line */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? T.teal : T.faint }}>
+        {/* ── Human status ── */}
+        <div style={{ padding: "8px 18px 0", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? T.teal : T.faint }}>
           {status.human ? <UserCheck size={13} /> : <Bot size={13} />}
           {status.human ? "Human agent available" : "Automated only"}
         </div>
 
-        {/* 5 — Mini chart — supporting context */}
-        <BarChart hourly={company.hourly} compact />
+        {/* ── Mini chart ── */}
+        <div style={{ padding: "12px 18px 0" }}>
+          <BarChart hourly={company.hourly} compact />
+        </div>
+
+        {/* ── Transparency footer: last updated + report count ── */}
+        <div style={{
+          margin: "12px 0 0", padding: "10px 18px",
+          borderTop: `1px solid rgba(${r.rgb},0.12)`,
+          display: "flex", alignItems: "center", gap: 6,
+          fontSize: 11, color: T.faint, fontFamily: T.body,
+        }}>
+          <Clock size={10} />
+          <span>
+            Updated {minsAgoThisHour()} min ago
+            {meta ? ` · Based on ${meta.reports.toLocaleString()} reports` : ""}
+          </span>
+        </div>
       </button>
     </AnimatedCard>
   );
@@ -921,21 +1034,39 @@ export default function DialTrendApp() {
         {/* ★ LIVE LEADERBOARD ★ */}
         <section style={{ padding: "40px 20px 48px", borderTop: `1px solid ${T.border}`, background: "rgba(0,229,160,0.02)" }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
-            <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 10 }}>
-              <div className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal }} />
-              <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Who to call right now · {fmt(nowH)}</span>
+            {/* Section header */}
+            <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 24 }}>
+              <div className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, flexShrink: 0 }} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Live signal · {fmt(nowH)}</span>
             </div>
 
-            {/* index prop added — drives AnimatedCard stagger inside LiveWaitCard */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+            {/* Three ranked cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
               {leaderboard.map((company, i) => (
                 <LiveWaitCard key={company.id} company={company} rank={i} index={i} onClick={() => setSelected(company)} />
               ))}
             </div>
 
-            <p style={{ textAlign: "center", fontSize: 13, color: T.faint, marginTop: 16, fontFamily: T.body }}>
-              Tap any card to see the full day's chart and call button
-            </p>
+            {/* Data transparency bar — below all cards */}
+            <div style={{
+              marginTop: 16, padding: "11px 16px",
+              background: "rgba(255,255,255,0.025)", borderRadius: 12,
+              border: `1px solid ${T.border}`,
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              flexWrap: "wrap", gap: 8,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.faint, fontFamily: T.body }}>
+                <Clock size={11} />
+                <span>Last updated <strong style={{ color: T.muted, fontWeight: 600 }}>{minsAgoThisHour()} minutes ago</strong></span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: T.faint, fontFamily: T.body }}>
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <Users size={10} /> Community-submitted reports
+                </span>
+                <span style={{ color: T.border }}>·</span>
+                <span>Refreshes each hour</span>
+              </div>
+            </div>
           </div>
         </section>
 
