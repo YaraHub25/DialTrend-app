@@ -440,31 +440,28 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `0 12px 40px rgba(${r.rgb},0.18)`; }}
         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
       >
-        {/* ── Top band: status badge + FlowPulse (color-matched to rank) ── */}
-        <div style={{
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-          padding: "14px 18px 0",
-        }}>
+        {/* ── Top band: status badge — single line, no wrap ── */}
+        <div style={{ padding: "14px 18px 0" }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 7,
-            padding: "5px 13px 5px 8px", borderRadius: 20,
+            padding: "6px 14px", borderRadius: 20,
             background: `rgba(${r.rgb},0.13)`, border: `1px solid rgba(${r.rgb},0.35)`,
+            whiteSpace: "nowrap",          // ← prevents any line break
+            maxWidth: "100%",
           }}>
-            {/* FlowPulseSVG color-matched: we pass waitTime so the hook picks the right state */}
-            <FlowPulseSVG waitTime={wait} isHuman={status.human} size={16} />
             <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.3, fontFamily: T.brand }}>{r.label}</span>
           </div>
-          {/* Trend indicator — predictive signal */}
-          <span style={{ fontSize: 11, fontWeight: 700, color: trendColor, fontFamily: T.body }}>{trendLabel}</span>
         </div>
 
-        {/* ── Company identity: logo + name ── */}
+        {/* ── Company identity: logo + name + FlowPulse (replaces Steady) ── */}
         <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 10 }}>
           <CompanyLogo company={company} size={36} />
-          <div>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 18, fontWeight: 800, color: T.text, lineHeight: 1.15 }}>{company.name}</div>
             <div style={{ fontSize: 11, color: T.faint, marginTop: 1, fontFamily: T.body }}>{company.category}</div>
           </div>
+          {/* FlowPulseSVG sits here — enough space, color matches rank */}
+          <FlowPulseSVG waitTime={wait} isHuman={status.human} size={38} />
         </div>
 
         {/* ── Big metric: "26 min wait" inline ── */}
