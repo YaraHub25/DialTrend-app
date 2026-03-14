@@ -430,9 +430,9 @@ function LiveWaitCard({ company, rank, index, onClick }) {
     <AnimatedCard delay={0.05 * index} style={{ width: "100%" }}>
       <button onClick={onClick} style={{
         // Card has a subtle color-tinted gradient from the top that bleeds to transparent
-        background: `linear-gradient(160deg, rgba(${r.rgb},0.08) 0%, ${T.surface} 55%)`,
-        border: `1px solid ${r.border}`,
-        borderRadius: 20, padding: "0", cursor: "pointer",
+        background: `linear-gradient(160deg, rgba(${r.rgb},0.30) 10%, ${T.surface} 50%)`,
+        border: `3px solid ${r.border}`,
+        borderRadius: 28, padding: "10px", cursor: "pointer",
         fontFamily: T.brand, textAlign: "left", width: "100%",
         transition: "all 0.22s", display: "flex", flexDirection: "column",
         overflow: "hidden",
@@ -441,35 +441,35 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
       >
         {/* ── Top band: status badge — single line, no wrap ── */}
-        <div style={{ padding: "14px 18px 0" }}>
+        <div style={{ padding: "20px 2px 5px" }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 7,
-            padding: "6px 14px", borderRadius: 20,
-            background: `rgba(${r.rgb},0.13)`, border: `1px solid rgba(${r.rgb},0.35)`,
+            padding: "15px 10px", borderRadius: 50,
+            background: `rgba(${r.rgb},0.10)`, border: `3px solid rgba(${r.rgb},0.55)`,
             whiteSpace: "nowrap",          // ← prevents any line break
-            maxWidth: "100%",
+            maxWidth: "150%",
           }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.3, fontFamily: T.brand }}>{r.label}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: r.color, letterSpacing: 3.0, fontFamily: T.brand }}>{r.label}</span>
           </div>
         </div>
 
         {/* ── Company identity: logo + name + FlowPulse (replaces Steady) ── */}
-        <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ padding: "14px 1px 3px", display: "flex", alignItems: "center", gap: 10 }}>
           <CompanyLogo company={company} size={36} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: T.text, lineHeight: 1.15 }}>{company.name}</div>
-            <div style={{ fontSize: 11, color: T.faint, marginTop: 1, fontFamily: T.body }}>{company.category}</div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: T.text, lineHeight: 1.50 }}>{company.name}</div>
+            <div style={{ fontSize: 12, color: T.faint, marginTop: 10, fontFamily: T.body }}>{company.category}</div>
           </div>
           {/* FlowPulseSVG sits here — enough space, color matches rank */}
-          <FlowPulseSVG waitTime={wait} isHuman={status.human} size={38} />
+          <FlowPulseSVG waitTime={wait} isHuman={status.human} size={48} />
         </div>
 
         {/* ── Big metric: "26 min wait" inline ── */}
-        <div style={{ padding: "12px 18px 0" }}>
+        <div style={{ padding: "20px 48px 8px" }}>
           {wait > 0 && status.human ? (
             <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-              <span style={{ fontSize: 44, fontWeight: 800, color: r.color, lineHeight: 1, fontFamily: T.brand }}>{wait}</span>
-              <span style={{ fontSize: 18, fontWeight: 600, color: T.muted, fontFamily: T.body }}>min wait</span>
+              <span style={{ fontSize: 44, fontWeight: 700, color: r.color, lineHeight: 2.5, fontFamily: T.brand }}>{wait}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, color: T.muted, fontFamily: T.body }}>min wait</span>
             </div>
           ) : (
             <div style={{ fontSize: 15, color: T.faint, fontFamily: T.body, paddingTop: 4 }}>
@@ -479,24 +479,24 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         </div>
 
         {/* ── Human status ── */}
-        <div style={{ padding: "8px 18px 0", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? T.teal : T.faint }}>
+        <div style={{ padding: "18px 18px 20px", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontFamily: T.body, fontWeight: 500, color: status.human ? T.teal : T.faint }}>
           {status.human ? <UserCheck size={13} /> : <Bot size={13} />}
           {status.human ? "Human agent available" : "Automated only"}
         </div>
 
         {/* ── Mini chart ── */}
-        <div style={{ padding: "12px 18px 0" }}>
+        <div style={{ padding: "32px 2px 15px" }}>
           <BarChart hourly={company.hourly} compact />
         </div>
 
         {/* ── Transparency footer: last updated + report count ── */}
         <div style={{
-          margin: "12px 0 0", padding: "10px 18px",
-          borderTop: `1px solid rgba(${r.rgb},0.12)`,
-          display: "flex", alignItems: "center", gap: 6,
+          margin: "5px 5px 10px", padding: "15px 5px",
+          borderTop: `3px solid rgba(${r.rgb},1.50)`,
+          display: "flex", alignItems: "center", gap: 15,
           fontSize: 11, color: T.faint, fontFamily: T.body,
         }}>
-          <Clock size={10} />
+          <Clock size={30} />
           <span>
             Updated {minsAgoThisHour()} min ago
             {meta ? ` · Based on ${meta.reports.toLocaleString()} reports` : ""}
