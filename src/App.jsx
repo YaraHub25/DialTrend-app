@@ -495,6 +495,7 @@ function LiveWaitCard({ company, rank, index, onClick }) {
           borderTop: `3px solid rgba(${r.rgb},1.50)`,
           display: "flex", alignItems: "center", gap: 15,
           fontSize: 11, color: T.faint, fontFamily: T.body,
+          
         }}>
           <Clock size={30} />
           <span>
