@@ -802,7 +802,7 @@ function CompanyDetail({ company, onBack }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[["#00e5a0","Short"],["#f59e0b","Long"],["#ef4444","Very long"]].map(([c,l]) => (
                 <span key={l} style={{ fontSize: 11, color: c, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: c, display: "inline-block" }} />{l}
+                  <span style={{ width: 28, height: 8, borderRadius: 2, background: c, display: "inline-block" }} />{l}
                 </span>
               ))}
             </div>
@@ -810,7 +810,7 @@ function CompanyDetail({ company, onBack }) {
 
           {/* Y-axis + animated chart */}
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 12 }}>
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: 90, paddingBottom: 4 }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: 90, paddingBottom: 14 }}>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>{max}m</span>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>{Math.round(max/2)}m</span>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>0</span>
