@@ -433,7 +433,7 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         background: `linear-gradient(160deg, rgba(${r.rgb},0.30) 10%, ${T.surface} 50%)`,
         border: `3px solid ${r.border}`,
         borderRadius: 28, padding: "10px", cursor: "pointer",
-        fontFamily: T.brand, textAlign: "left", width: "100%",
+        fontFamily: T.brand, textAlign: "center", width: "100%",
         transition: "all 0.22s", display: "flex", flexDirection: "column",
         overflow: "hidden",
       }}
@@ -445,7 +445,7 @@ function LiveWaitCard({ company, rank, index, onClick }) {
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 7,
             padding: "15px 10px", borderRadius: 50,
-            background: `rgba(${r.rgb},0.10)`, border: `3px solid rgba(${r.rgb},0.55)`,
+            background: `rgba(${r.rgb},0.10)`, border: `3px solid rgba(${r.rgb},1.55)`,
             whiteSpace: "nowrap",          // ← prevents any line break
             maxWidth: "150%",
           }}>
@@ -723,7 +723,7 @@ function CompanyDetail({ company, onBack }) {
         {/* ── Company identity ── */}
         {/* AnimatedCard replaces the manual cardVisible + CSS fadeUp approach */}
         <AnimatedCard delay={0} style={{
-          background: T.surface, borderRadius: 20, padding: "20px 22px",
+          background: T.surface, borderRadius: 20, padding: "20px 12px",
           border: `1px solid ${T.border}`, marginBottom: 12,
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
@@ -754,7 +754,7 @@ function CompanyDetail({ company, onBack }) {
         </AnimatedCard>
 
         {/* ── Wait number card ── */}
-        <AnimatedCard delay={0.15} style={{
+        <AnimatedCard delay={1.15} style={{
           background: T.surface, borderRadius: 20, padding: "20px 22px",
           border: `1px solid ${T.border}`, marginBottom: 12,
         }}>
