@@ -458,16 +458,18 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 10 }}>
           <CompanyLogo company={company} size={36} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* maxWidth + overflow ellipsis prevents long names (Royal Caribbean) wrapping */}
+            {/* Allow 2-line wrap so long names never truncate */}
             <div style={{
-              fontSize: 17, fontWeight: 800, color: T.text, lineHeight: 1.2,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              fontSize: 16, fontWeight: 800, color: T.text, lineHeight: 1.25,
+              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+              overflow: "hidden",
             }}>{company.name}</div>
             <div style={{ fontSize: 11, color: T.faint, marginTop: 2, fontFamily: T.body }}>{company.category}</div>
           </div>
-          {/* FlowPulseSVG — overflow:visible on parent means the glow now shows fully */}
+          {/* FlowPulseSVG — waitTime forced by rank so color matches card:
+              rank 0 CALL NOW → stable (teal), rank 1 CONSIDER → warning (amber), rank 2 AVOID → critical (red) */}
           <div style={{ flexShrink: 0, padding: "4px" }}>
-            <FlowPulseSVG waitTime={wait} isHuman={status.human} size={40} />
+            <FlowPulseSVG waitTime={[5, 15, 30][rank]} isHuman={status.human} size={40} />
           </div>
         </div>
 
@@ -485,8 +487,8 @@ function LiveWaitCard({ company, rank, index, onClick }) {
           )}
         </div>
 
-        {/* ── Human status ── */}
-        <div style={{ padding: "8px 18px 0", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? T.teal : T.faint }}>
+        {/* ── Human status — color matches rank, not always teal ── */}
+        <div style={{ padding: "8px 18px 0", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? r.color : T.faint }}>
           {status.human ? <UserCheck size={13} /> : <Bot size={13} />}
           {status.human ? "Human agent available" : "Automated only"}
         </div>
