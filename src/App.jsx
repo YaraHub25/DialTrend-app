@@ -337,8 +337,8 @@ function CompanyLogo({ company, size = 32 }) {
 
   return (
     <div style={{
-      width: size, height: size, borderRadius: size * 0.28,
-      background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
+      width: size, height: size, borderRadius: size * 5.28,
+      background: "rgba(255,255,255,0.06)", border: "5px solid rgba(255,255,255,0.08)",
       display: "flex", alignItems: "center", justifyContent: "center",
       overflow: "hidden", flexShrink: 0,
     }}>
@@ -346,7 +346,7 @@ function CompanyLogo({ company, size = 32 }) {
         src={`https://logo.clearbit.com/${meta.domain}`}
         alt={company.name}
         onError={() => setFailed(true)}
-        style={{ width: size * 0.72, height: size * 0.72, objectFit: "contain" }}
+        style={{ width: size * 7.72, height: size * 7.72, objectFit: "contain" }}
       />
     </div>
   );
@@ -381,7 +381,7 @@ function BarChart({ hourly, compact = false, animate = false }) {
               onMouseEnter={() => !compact && setHovered(i)}
               onMouseLeave={() => !compact && setHovered(null)}
               style={{
-                flex: 1, height: h, borderRadius: "3px 3px 0 0",
+                flex: 1, height: h, borderRadius: "5px 5px 0 0",
                 background: color,
                 opacity: isHov ? 1 : isNow ? 1 : 0.65,
                 boxShadow: isNow ? `0 0 10px ${color}99` : isHov ? `0 0 8px ${color}66` : "none",
@@ -432,7 +432,7 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         background: `linear-gradient(160deg, rgba(${r.rgb},0.13) 0%, ${T.surface} 60%)`,
         border: `1px solid ${r.border}`,
         borderRadius: 20, padding: "0", cursor: "pointer",
-        fontFamily: T.brand, textAlign: "left", width: "100%",
+        fontFamily: T.brand, textAlign: "center", width: "100%",
         transition: "all 0.22s", display: "flex", flexDirection: "column",
         // ↓ overflow must be VISIBLE — overflow:hidden clips the FlowPulseSVG glow layer
         overflow: "visible",
@@ -446,11 +446,11 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         <div style={{ padding: "16px 18px 0" }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 7,
-            padding: "6px 16px", borderRadius: 20,
+            padding: "6px 10px", borderRadius: 20,
             background: `rgba(${r.rgb},0.18)`, border: `1px solid rgba(${r.rgb},0.45)`,
             whiteSpace: "nowrap",
           }}>
-            <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.4, fontFamily: T.brand }}>{r.label}</span>
+            <span style={{ fontSize: 15, fontWeight: 680, color: r.color, letterSpacing: 1.4, fontFamily: T.brand }}>{r.label}</span>
           </div>
         </div>
 
