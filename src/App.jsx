@@ -906,11 +906,122 @@ function CompanyDetail({ company, onBack }) {
   );
 }
 
+// ─── Spotlight Card ───────────────────────────────────────────────────────────
+// Shows the #1 leaderboard company with a direct call button inline on homepage.
+// No navigation needed — user can call without ever tapping into a detail page.
+function SpotlightCard({ company, onShare, onViewDetail }) {
+  const nowH = new Date().getHours();
+  const wait  = company.hourly[nowH];
+  const status = getAgentStatus(company);
+  const meta   = COMPANY_META[company.id];
+  const color  = waitColor(wait);
+
+  return (
+    <div style={{
+      background: `linear-gradient(145deg, rgba(0,229,160,0.1) 0%, ${T.surface} 52%)`,
+      border: `1px solid rgba(0,229,160,0.3)`,
+      borderRadius: 20,
+      padding: "22px 22px 18px",
+      boxShadow: "inset 0 1px 0 rgba(0,229,160,0.25)",
+    }}>
+      {/* Header label */}
+      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
+        <div className="live-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: T.teal }} />
+        <span style={{ fontSize: 10, fontWeight: 700, color: T.teal, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body }}>Best call right now</span>
+      </div>
+
+      {/* Company identity row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+        <CompanyLogo company={company} size={42} />
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 20, fontWeight: 800, color: T.text, fontFamily: T.brand, lineHeight: 1.15 }}>{company.name}</div>
+          <div style={{ fontSize: 12, color: T.faint, marginTop: 2, fontFamily: T.body }}>{company.category}</div>
+        </div>
+        <FlowPulseSVG waitTime={wait} isHuman={status.human} size={38} />
+      </div>
+
+      {/* Metric row: "2 min wait  |  Human agent available" */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+          <span style={{ fontSize: 42, fontWeight: 800, color, lineHeight: 1, fontFamily: T.brand }}>{wait > 0 ? wait : "—"}</span>
+          <span style={{ fontSize: 17, fontWeight: 600, color: T.muted, fontFamily: T.body }}>min wait</span>
+        </div>
+        {status.human && (
+          <>
+            <div style={{ width: 1, height: 28, background: T.border, flexShrink: 0 }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600, color: T.teal, fontFamily: T.body }}>
+              <UserCheck size={13} /> Human agent available
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Confidence line */}
+      {meta && (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.faint, fontFamily: T.body, marginBottom: 18 }}>
+          <CheckCircle size={11} color={T.teal} />
+          <span style={{ color: T.teal, fontWeight: 600 }}>Confidence: High</span>
+          <span>·</span>
+          <span>Based on {meta.reports.toLocaleString()} reports</span>
+        </div>
+      )}
+
+      {/* PRIMARY CTA — the whole point: tap to call, zero navigation */}
+      <a
+        href={`tel:${company.phone.replace(/[^0-9]/g,"")}`}
+        style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+          width: "100%", padding: "15px", borderRadius: 13,
+          background: T.teal, color: "#0a0a0f",
+          fontSize: 15, fontWeight: 800, fontFamily: T.brand,
+          textDecoration: "none", marginBottom: 8,
+          boxSizing: "border-box",
+          boxShadow: "0 4px 24px rgba(0,229,160,0.3)",
+          transition: "transform 0.15s, box-shadow 0.15s",
+        }}
+        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,229,160,0.45)"; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,229,160,0.3)"; }}
+      >
+        <Phone size={15} /> Call {company.name} — {company.phone}
+      </a>
+
+      {/* Secondary CTA row: share wait + see full chart */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <button onClick={onShare} style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          padding: "11px", borderRadius: 12,
+          background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+          color: T.muted, fontSize: 12, cursor: "pointer", fontFamily: T.body,
+          transition: "background 0.2s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
+        >
+          <Share2 size={12} /> How long did you wait?
+        </button>
+        <button onClick={onViewDetail} style={{
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+          padding: "11px", borderRadius: 12,
+          background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+          color: T.muted, fontSize: 12, cursor: "pointer", fontFamily: T.body,
+          transition: "background 0.2s",
+        }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
+        >
+          <Clock size={12} /> See full day chart
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Main App ─────────────────────────────────────────────────────────────────
 export default function DialTrendApp() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shareCompany, setShareCompany] = useState(null);
   // Auto-show onboarding on first visit — change true → false to disable
   const [showOnboarding, setShowOnboarding] = useState(true);
 
@@ -966,6 +1077,7 @@ export default function DialTrendApp() {
       <div style={{ minHeight: "100vh", background: T.bg, fontFamily: T.body, color: T.text }}>
         {menuOpen && <HamburgerMenu onClose={() => setMenuOpen(false)} onHowItWorks={() => { setMenuOpen(false); setShowOnboarding(true); }} />}
         {showOnboarding && <HowItWorksPanel onClose={() => setShowOnboarding(false)} />}
+        {shareCompany && <ContributeModal company={shareCompany} onClose={() => setShareCompany(null)} />}
 
         {/* Header */}
         <header style={{ borderBottom: `1px solid ${T.border}`, background: "rgba(10,10,15,0.92)", position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(12px)", padding: "15px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -1085,30 +1197,100 @@ export default function DialTrendApp() {
           </div>
         </div>
 
-        {/* Browse all — collapsed list, not a chip dump */}
-        <section id="browse-all" style={{ padding: "32px 20px 48px", background: T.surface, textAlign: "center" }}>
-          <p style={{ fontSize: 11, color: T.faint, textTransform: "uppercase", letterSpacing: 2, marginBottom: 20, fontFamily: T.body }}>All 20 companies</p>
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, maxWidth: 640, margin: "0 auto" }}>
-            {COMPANIES.map(c => {
-              const agentStatus = getAgentStatus(c);
-              const nowWait = c.hourly[new Date().getHours()];
-              return (
-                <button key={c.id} className="ct-card" onClick={() => setSelected(c)} style={{
-                  padding: "8px 14px", borderRadius: 10,
-                  border: `1px solid ${T.border}`,
-                  background: "rgba(255,255,255,0.025)",
-                  color: T.muted, fontSize: 13, cursor: "pointer",
-                  fontFamily: T.body, fontWeight: 500,
-                  transition: "all 0.2s", display: "flex", alignItems: "center", gap: 8,
-                }}>
-                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: agentStatus.human ? T.teal : "rgba(255,255,255,0.18)", flexShrink: 0 }} />
-                  {c.name}
-                  {agentStatus.human && nowWait > 0 && (
-                    <span style={{ fontSize: 11, color: T.faint, fontWeight: 400 }}>{nowWait}m</span>
-                  )}
-                </button>
-              );
-            })}
+        {/* ── Browse + Spotlight ─────────────────────────────────────────── */}
+        <section id="browse-all" style={{ padding: "40px 20px 56px", background: T.surface }}>
+          <div style={{ maxWidth: 760, margin: "0 auto" }}>
+
+            {/* Two-column company browser */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 28 }}>
+
+              {/* Left: Top companies this hour — sorted by wait, human only */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body, marginBottom: 14 }}>
+                  Top companies this hour
+                </div>
+                {[...COMPANIES]
+                  .filter(c => { const s = getAgentStatus(c); return s.human && c.hourly[nowH] > 0; })
+                  .sort((a, b) => a.hourly[nowH] - b.hourly[nowH])
+                  .slice(0, 7)
+                  .map(c => {
+                    const wait = c.hourly[nowH];
+                    return (
+                      <button key={c.id} onClick={() => setSelected(c)} style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        width: "100%", padding: "10px 12px", marginBottom: 6,
+                        borderRadius: 12, border: `1px solid ${T.border}`,
+                        background: "rgba(255,255,255,0.025)",
+                        cursor: "pointer", textAlign: "left", fontFamily: T.body,
+                        transition: "all 0.18s",
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = T.tealBorder; e.currentTarget.style.background = T.tealDim; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = "rgba(255,255,255,0.025)"; }}
+                      >
+                        <CompanyLogo company={c} size={28} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                          <div style={{ fontSize: 11, color: T.faint }}>{c.category}</div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: waitColor(wait), fontFamily: T.brand }}>{wait}m</div>
+                          <div style={{ fontSize: 10, color: T.faint }}>wait</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+
+              {/* Right: Recently trending — biggest absolute change from last hour */}
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body, marginBottom: 14 }}>
+                  Recently trending
+                </div>
+                {[...COMPANIES]
+                  .map(c => ({ c, trend: getTrend(c.hourly) }))
+                  .filter(x => x.trend !== 0 && getAgentStatus(x.c).human)
+                  .sort((a, b) => Math.abs(b.trend) - Math.abs(a.trend))
+                  .slice(0, 7)
+                  .map(({ c, trend }) => {
+                    const rising = trend > 0;
+                    const tColor = rising ? "#ef4444" : "#00e5a0";
+                    return (
+                      <button key={c.id} onClick={() => setSelected(c)} style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        width: "100%", padding: "10px 12px", marginBottom: 6,
+                        borderRadius: 12, border: `1px solid ${T.border}`,
+                        background: "rgba(255,255,255,0.025)",
+                        cursor: "pointer", textAlign: "left", fontFamily: T.body,
+                        transition: "all 0.18s",
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = tColor + "55"; e.currentTarget.style.background = tColor + "0d"; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = "rgba(255,255,255,0.025)"; }}
+                      >
+                        {/* Trend dot */}
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: tColor, flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
+                          <div style={{ fontSize: 11, color: T.faint }}>{c.category}</div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: tColor, fontFamily: T.brand }}>
+                            {rising ? "↑" : "↓"} {Math.abs(trend)}m
+                          </div>
+                          <div style={{ fontSize: 10, color: T.faint }}>from last hr</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+              </div>
+            </div>
+
+            {/* Spotlight — #1 company with inline call button. Zero navigation needed. */}
+            <SpotlightCard
+              company={leaderboard[0]}
+              onShare={() => setShareCompany(leaderboard[0])}
+              onViewDetail={() => setSelected(leaderboard[0])}
+            />
+
           </div>
         </section>
 
