@@ -429,47 +429,54 @@ function LiveWaitCard({ company, rank, index, onClick }) {
   return (
     <AnimatedCard delay={0.05 * index} style={{ width: "100%" }}>
       <button onClick={onClick} style={{
-        // Card has a subtle color-tinted gradient from the top that bleeds to transparent
-        background: `linear-gradient(160deg, rgba(${r.rgb},0.30) 10%, ${T.surface} 50%)`,
-        border: `3px solid ${r.border}`,
-        borderRadius: 28, padding: "10px", cursor: "pointer",
-        fontFamily: T.brand, textAlign: "center", width: "100%",
+        background: `linear-gradient(160deg, rgba(${r.rgb},0.13) 0%, ${T.surface} 60%)`,
+        border: `1px solid ${r.border}`,
+        borderRadius: 20, padding: "0", cursor: "pointer",
+        fontFamily: T.brand, textAlign: "left", width: "100%",
         transition: "all 0.22s", display: "flex", flexDirection: "column",
-        overflow: "hidden",
+        // ↓ overflow must be VISIBLE — overflow:hidden clips the FlowPulseSVG glow layer
+        overflow: "visible",
+        // inset box-shadow creates the inner top glow without needing overflow:hidden
+        boxShadow: `inset 0 1px 0 rgba(${r.rgb},0.3)`,
       }}
-        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `0 12px 40px rgba(${r.rgb},0.18)`; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "none"; }}
+        onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `inset 0 1px 0 rgba(${r.rgb},0.3), 0 16px 48px rgba(${r.rgb},0.22)`; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `inset 0 1px 0 rgba(${r.rgb},0.3)`; }}
       >
-        {/* ── Top band: status badge — single line, no wrap ── */}
-        <div style={{ padding: "20px 2px 5px" }}>
+        {/* ── Status badge — single line, no wrap ── */}
+        <div style={{ padding: "16px 18px 0" }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 7,
-            padding: "15px 10px", borderRadius: 50,
-            background: `rgba(${r.rgb},0.10)`, border: `3px solid rgba(${r.rgb},1.55)`,
-            whiteSpace: "nowrap",          // ← prevents any line break
-            maxWidth: "150%",
+            padding: "6px 16px", borderRadius: 20,
+            background: `rgba(${r.rgb},0.18)`, border: `1px solid rgba(${r.rgb},0.45)`,
+            whiteSpace: "nowrap",
           }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: r.color, letterSpacing: 3.0, fontFamily: T.brand }}>{r.label}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.4, fontFamily: T.brand }}>{r.label}</span>
           </div>
         </div>
 
-        {/* ── Company identity: logo + name + FlowPulse (replaces Steady) ── */}
-        <div style={{ padding: "14px 1px 3px", display: "flex", alignItems: "center", gap: 10 }}>
+        {/* ── Company identity: logo + name + FlowPulseSVG ── */}
+        <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 10 }}>
           <CompanyLogo company={company} size={36} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: T.text, lineHeight: 1.50 }}>{company.name}</div>
-            <div style={{ fontSize: 12, color: T.faint, marginTop: 10, fontFamily: T.body }}>{company.category}</div>
+            {/* maxWidth + overflow ellipsis prevents long names (Royal Caribbean) wrapping */}
+            <div style={{
+              fontSize: 17, fontWeight: 800, color: T.text, lineHeight: 1.2,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>{company.name}</div>
+            <div style={{ fontSize: 11, color: T.faint, marginTop: 2, fontFamily: T.body }}>{company.category}</div>
           </div>
-          {/* FlowPulseSVG sits here — enough space, color matches rank */}
-          <FlowPulseSVG waitTime={wait} isHuman={status.human} size={48} />
+          {/* FlowPulseSVG — overflow:visible on parent means the glow now shows fully */}
+          <div style={{ flexShrink: 0, padding: "4px" }}>
+            <FlowPulseSVG waitTime={wait} isHuman={status.human} size={40} />
+          </div>
         </div>
 
         {/* ── Big metric: "26 min wait" inline ── */}
-        <div style={{ padding: "20px 48px 8px" }}>
+        <div style={{ padding: "12px 18px 0" }}>
           {wait > 0 && status.human ? (
             <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-              <span style={{ fontSize: 44, fontWeight: 700, color: r.color, lineHeight: 2.5, fontFamily: T.brand }}>{wait}</span>
-              <span style={{ fontSize: 18, fontWeight: 700, color: T.muted, fontFamily: T.body }}>min wait</span>
+              <span style={{ fontSize: 44, fontWeight: 800, color: r.color, lineHeight: 1, fontFamily: T.brand }}>{wait}</span>
+              <span style={{ fontSize: 18, fontWeight: 600, color: T.muted, fontFamily: T.body }}>min wait</span>
             </div>
           ) : (
             <div style={{ fontSize: 15, color: T.faint, fontFamily: T.body, paddingTop: 4 }}>
@@ -479,25 +486,24 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         </div>
 
         {/* ── Human status ── */}
-        <div style={{ padding: "18px 18px 20px", display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontFamily: T.body, fontWeight: 500, color: status.human ? T.teal : T.faint }}>
+        <div style={{ padding: "8px 18px 0", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? T.teal : T.faint }}>
           {status.human ? <UserCheck size={13} /> : <Bot size={13} />}
           {status.human ? "Human agent available" : "Automated only"}
         </div>
 
         {/* ── Mini chart ── */}
-        <div style={{ padding: "32px 2px 15px" }}>
+        <div style={{ padding: "12px 18px 0" }}>
           <BarChart hourly={company.hourly} compact />
         </div>
 
         {/* ── Transparency footer: last updated + report count ── */}
         <div style={{
-          margin: "5px 5px 10px", padding: "15px 5px",
-          borderTop: `3px solid rgba(${r.rgb},1.50)`,
-          display: "flex", alignItems: "center", gap: 15,
+          margin: "12px 0 0", padding: "10px 18px",
+          borderTop: `1px solid rgba(${r.rgb},0.12)`,
+          display: "flex", alignItems: "center", gap: 6,
           fontSize: 11, color: T.faint, fontFamily: T.body,
-          
         }}>
-          <Clock size={30} />
+          <Clock size={10} />
           <span>
             Updated {minsAgoThisHour()} min ago
             {meta ? ` · Based on ${meta.reports.toLocaleString()} reports` : ""}
@@ -724,7 +730,7 @@ function CompanyDetail({ company, onBack }) {
         {/* ── Company identity ── */}
         {/* AnimatedCard replaces the manual cardVisible + CSS fadeUp approach */}
         <AnimatedCard delay={0} style={{
-          background: T.surface, borderRadius: 20, padding: "20px 12px",
+          background: T.surface, borderRadius: 20, padding: "20px 22px",
           border: `1px solid ${T.border}`, marginBottom: 12,
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
@@ -755,7 +761,7 @@ function CompanyDetail({ company, onBack }) {
         </AnimatedCard>
 
         {/* ── Wait number card ── */}
-        <AnimatedCard delay={1.15} style={{
+        <AnimatedCard delay={0.15} style={{
           background: T.surface, borderRadius: 20, padding: "20px 22px",
           border: `1px solid ${T.border}`, marginBottom: 12,
         }}>
@@ -803,7 +809,7 @@ function CompanyDetail({ company, onBack }) {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[["#00e5a0","Short"],["#f59e0b","Long"],["#ef4444","Very long"]].map(([c,l]) => (
                 <span key={l} style={{ fontSize: 11, color: c, fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ width: 28, height: 8, borderRadius: 2, background: c, display: "inline-block" }} />{l}
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: c, display: "inline-block" }} />{l}
                 </span>
               ))}
             </div>
@@ -811,7 +817,7 @@ function CompanyDetail({ company, onBack }) {
 
           {/* Y-axis + animated chart */}
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 12 }}>
-            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: 90, paddingBottom: 14 }}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: 90, paddingBottom: 4 }}>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>{max}m</span>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>{Math.round(max/2)}m</span>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>0</span>
