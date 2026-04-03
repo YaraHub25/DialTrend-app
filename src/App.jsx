@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { supabase } from './supabase';
 import {
   FlowPulseSVG, AnimatedBanner, AnimatedCard,
   AnimatedWaitNumber, useWaitTimeAnimation
@@ -679,7 +680,23 @@ function ContributeModal({ company, onClose }) {
                 <button key={r} onClick={() => setSel(r)} style={{ padding: "12px 16px", borderRadius: 12, border: sel===r ? `2px solid ${T.teal}` : `1px solid ${T.border}`, background: sel===r ? T.tealDim : "rgba(255,255,255,0.03)", color: sel===r ? T.teal : T.text, fontSize: 14, cursor: "pointer", textAlign: "left", fontFamily: "'Syne', sans-serif", transition: "all 0.2s" }}>{r}</button>
               ))}
             </div>
-            <button onClick={() => { if (sel) { setDone(true); setTimeout(onClose, 2000); }}} disabled={!sel} style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: sel ? T.teal : "rgba(255,255,255,0.08)", color: sel ? "#0a0a0f" : T.faint, fontSize: 15, fontWeight: 800, cursor: sel ? "pointer" : "not-allowed", fontFamily: "'Syne', sans-serif", transition: "all 0.2s" }}>Share & Help Others</button>
+            onClick={async () => {
+            if (!sel) return;
+            const waitMap = {
+            '< 5 min': 3,
+            '5–10 min': 7,
+            '10–20 min': 15,
+            '20–30 min': 25,
+            '30+ min': 35
+  };
+    await supabase.from('submissions').insert({
+      company_id: company.id,
+      hour_of_call: new Date().getHours(),
+      wait_minutes: waitMap[sel],
+  });
+      setDone(true);
+      setTimeout(onClose, 2000);
+}}
           </>
         )}
       </div>
