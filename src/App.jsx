@@ -180,8 +180,6 @@ const COMPANIES = [
 
 const QUICK = ["Netflix", "Amazon", "AT&T"];
 
-// ─── Company metadata: logo domain + report count ─────────────────────────────
-// report counts sourced from GetHuman public dataset estimates
 const COMPANY_META = {
   netflix:         { domain: "netflix.com",         reports: 312 },
   apple:           { domain: "apple.com",            reports: 847 },
@@ -205,13 +203,10 @@ const COMPANY_META = {
   royal_caribbean: { domain: "royalcaribbean.com",   reports: 129 },
 };
 
-// Returns how many minutes have elapsed since the start of the current hour.
-// This is the accurate "last updated" value — data refreshes at the top of each hour.
 function minsAgoThisHour() {
   return new Date().getMinutes();
 }
 
-// Computes the hourly trend: positive = wait rising this hour vs. prev, negative = falling
 function getTrend(hourly) {
   const h = new Date().getHours();
   const now = hourly[h];
@@ -220,7 +215,6 @@ function getTrend(hourly) {
   return now - prev;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 function getBest(hourly) {
   return hourly.map((v,i) => ({v,i})).filter(x => x.v > 0).sort((a,b) => a.v - b.v).slice(0,3).map(x => x.i);
 }
@@ -261,7 +255,6 @@ function getAgentStatus(company) {
   return { human: false, label: company.botOnly || "Automated only right now" };
 }
 
-// Maps rec.type (CompanyDetail logic) → Framer Motion status string (DialTrendMotion)
 const REC_TO_STATUS = {
   good:   "stable",
   ok:     "warning",
@@ -270,17 +263,14 @@ const REC_TO_STATUS = {
   nodata: "closed",
 };
 
-// ─── Theme ────────────────────────────────────────────────────────────────────
 const T = {
   bg: "#0a0a0f", surface: "#13131a", border: "rgba(255,255,255,0.08)",
   teal: "#00e5a0", tealDim: "rgba(0,229,160,0.10)", tealBorder: "rgba(0,229,160,0.25)",
   text: "#f1f5f9", muted: "#c8d4e0", faint: "#8b9ab0",
-  // ↑ WCAG fix: both values now pass 4.5:1 contrast on #0a0a0f and #13131a
   body: "'Plus Jakarta Sans', sans-serif",
   brand: "'Syne', sans-serif",
 };
 
-// ─── Logo ─────────────────────────────────────────────────────────────────────
 function Logo() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -296,7 +286,6 @@ function Logo() {
   );
 }
 
-// ─── Agent Badge ──────────────────────────────────────────────────────────────
 function AgentBadge({ company, size = "sm" }) {
   const status = getAgentStatus(company);
   const lg = size === "lg";
@@ -315,8 +304,6 @@ function AgentBadge({ company, size = "sm" }) {
   );
 }
 
-// ─── Company Logo ─────────────────────────────────────────────────────────────
-// Uses Clearbit Logo API for real brand logos with a clean initial fallback
 function CompanyLogo({ company, size = 32 }) {
   const [failed, setFailed] = useState(false);
   const meta = COMPANY_META[company.id];
@@ -352,7 +339,6 @@ function CompanyLogo({ company, size = 32 }) {
     </div>
   );
 }
-
 
 function BarChart({ hourly, compact = false, animate = false }) {
   const [mounted, setMounted] = useState(false);
@@ -409,7 +395,6 @@ function BarChart({ hourly, compact = false, animate = false }) {
   );
 }
 
-// ─── Live Wait Card (used in leaderboard) ─────────────────────────────────────
 function LiveWaitCard({ company, rank, index, onClick }) {
   const nowH = new Date().getHours();
   const wait = company.hourly[nowH];
@@ -424,9 +409,6 @@ function LiveWaitCard({ company, rank, index, onClick }) {
   ];
   const r = RANK[rank];
 
-  const trendLabel = trend > 3 ? `↑ Rising` : trend < -3 ? `↓ Falling` : `→ Steady`;
-  const trendColor = trend > 3 ? "#ef4444" : trend < -3 ? "#00e5a0" : T.faint;
-
   return (
     <AnimatedCard delay={0.05 * index} style={{ width: "100%" }}>
       <button onClick={onClick} style={{
@@ -435,49 +417,29 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         borderRadius: 20, padding: "0", cursor: "pointer",
         fontFamily: T.brand, textAlign: "left", width: "100%",
         transition: "all 0.22s", display: "flex", flexDirection: "column",
-        // ↓ overflow must be VISIBLE — overflow:hidden clips the FlowPulseSVG glow layer
         overflow: "visible",
-        // inset box-shadow creates the inner top glow without needing overflow:hidden
         boxShadow: `inset 0 1px 0 rgba(${r.rgb},0.3)`,
       }}
         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `inset 0 1px 0 rgba(${r.rgb},0.3), 0 16px 48px rgba(${r.rgb},0.22)`; }}
         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `inset 0 1px 0 rgba(${r.rgb},0.3)`; }}
       >
-        {/* ── Row 1: Status badge (left) + FlowPulseSVG (right) ── */}
-        {/* Putting FlowPulse here frees the name row to use full available width */}
-        <div style={{
-          padding: "16px 18px 0",
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-        }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center",
-            padding: "6px 16px", borderRadius: 20,
-            background: `rgba(${r.rgb},0.18)`, border: `1px solid rgba(${r.rgb},0.45)`,
-            whiteSpace: "nowrap",
-          }}>
+        <div style={{ padding: "16px 18px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", padding: "6px 16px", borderRadius: 20, background: `rgba(${r.rgb},0.18)`, border: `1px solid rgba(${r.rgb},0.45)`, whiteSpace: "nowrap" }}>
             <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.4, fontFamily: T.brand }}>{r.label}</span>
           </div>
-          {/* FlowPulseSVG pinned top-right — rank-matched color */}
           <div style={{ flexShrink: 0 }}>
             <FlowPulseSVG waitTime={[5, 15, 30][rank]} isHuman={status.human} size={38} />
           </div>
         </div>
 
-        {/* ── Row 2: Logo + full-width name ── */}
-        {/* FlowPulse is now in row 1, so name has logo-width + gap removed from constraint */}
         <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 12 }}>
           <CompanyLogo company={company} size={38} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 18, fontWeight: 800, color: T.text,
-              lineHeight: 1.25, wordBreak: "break-word",
-              whiteSpace: "normal",            // wrap freely — no clamp, no ellipsis
-            }}>{company.name}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: T.text, lineHeight: 1.25, wordBreak: "break-word", whiteSpace: "normal" }}>{company.name}</div>
             <div style={{ fontSize: 11, color: T.faint, marginTop: 3, fontFamily: T.body }}>{company.category}</div>
           </div>
         </div>
 
-        {/* ── Big metric: "26 min wait" inline ── */}
         <div style={{ padding: "12px 18px 0" }}>
           {wait > 0 && status.human ? (
             <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
@@ -491,24 +453,16 @@ function LiveWaitCard({ company, rank, index, onClick }) {
           )}
         </div>
 
-        {/* ── Human status — color matches rank, not always teal ── */}
         <div style={{ padding: "8px 18px 0", display: "flex", alignItems: "center", gap: 6, fontSize: 13, fontFamily: T.body, fontWeight: 600, color: status.human ? r.color : T.faint }}>
           {status.human ? <UserCheck size={13} /> : <Bot size={13} />}
           {status.human ? "Human agent available" : "Automated only"}
         </div>
 
-        {/* ── Mini chart ── */}
         <div style={{ padding: "12px 18px 0" }}>
           <BarChart hourly={company.hourly} compact />
         </div>
 
-        {/* ── Transparency footer: last updated + report count ── */}
-        <div style={{
-          margin: "12px 0 0", padding: "10px 18px",
-          borderTop: `1px solid rgba(${r.rgb},0.12)`,
-          display: "flex", alignItems: "center", gap: 6,
-          fontSize: 11, color: T.faint, fontFamily: T.body,
-        }}>
+        <div style={{ margin: "12px 0 0", padding: "10px 18px", borderTop: `1px solid rgba(${r.rgb},0.12)`, display: "flex", alignItems: "center", gap: 6, fontSize: 11, color: T.faint, fontFamily: T.body }}>
           <Clock size={10} />
           <span>
             Updated {minsAgoThisHour()} min ago
@@ -520,7 +474,6 @@ function LiveWaitCard({ company, rank, index, onClick }) {
   );
 }
 
-// ─── Onboarding ───────────────────────────────────────────────────────────────
 function HowItWorksPanel({ onClose }) {
   const [step, setStep] = useState(0);
   const steps = [
@@ -534,13 +487,7 @@ function HowItWorksPanel({ onClose }) {
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 200 }} />
-      <div style={{
-        position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-        background: T.surface, border: `1px solid ${T.border}`,
-        borderRadius: 24, padding: 36, width: "90%", maxWidth: 400, zIndex: 201,
-        boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(0,229,160,0.06)",
-        fontFamily: "'Syne', sans-serif",
-      }}>
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 24, padding: 36, width: "90%", maxWidth: 400, zIndex: 201, boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(0,229,160,0.06)", fontFamily: "'Syne', sans-serif" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: T.muted }}>
           <X size={20} />
         </button>
@@ -567,18 +514,11 @@ function HowItWorksPanel({ onClose }) {
   );
 }
 
-// ─── About Modal ─────────────────────────────────────────────────────────────
 function AboutModal({ onClose }) {
   return (
     <>
       <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)", zIndex: 300 }} />
-      <div style={{
-        position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-        background: T.surface, border: `1px solid ${T.border}`,
-        borderRadius: 24, padding: 36, width: "90%", maxWidth: 440, zIndex: 301,
-        boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(0,229,160,0.05)",
-        fontFamily: "'Syne', sans-serif", maxHeight: "85vh", overflowY: "auto",
-      }}>
+      <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: T.surface, border: `1px solid ${T.border}`, borderRadius: 24, padding: 36, width: "90%", maxWidth: 440, zIndex: 301, boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 40px rgba(0,229,160,0.05)", fontFamily: "'Syne', sans-serif", maxHeight: "85vh", overflowY: "auto" }}>
         <button onClick={onClose} style={{ position: "absolute", top: 16, right: 16, background: "none", border: "none", cursor: "pointer", color: T.muted }}>
           <X size={20} />
         </button>
@@ -616,7 +556,6 @@ function AboutModal({ onClose }) {
   );
 }
 
-// ─── Hamburger Menu ───────────────────────────────────────────────────────────
 function HamburgerMenu({ onClose, onHowItWorks }) {
   const [showAbout, setShowAbout] = useState(false);
   const items = [
@@ -662,6 +601,7 @@ function ContributeModal({ company, onClose }) {
   const [sel, setSel] = useState(null);
   const [done, setDone] = useState(false);
   const ranges = ["< 5 min", "5–10 min", "10–20 min", "20–30 min", "30+ min"];
+
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div onClick={e => e.stopPropagation()} style={{ background: T.surface, border: `1px solid ${T.border}`, borderRadius: 20, padding: 32, maxWidth: 400, width: "90%", fontFamily: "'Syne', sans-serif", boxShadow: "0 24px 64px rgba(0,0,0,0.5)" }}>
@@ -680,23 +620,29 @@ function ContributeModal({ company, onClose }) {
                 <button key={r} onClick={() => setSel(r)} style={{ padding: "12px 16px", borderRadius: 12, border: sel===r ? `2px solid ${T.teal}` : `1px solid ${T.border}`, background: sel===r ? T.tealDim : "rgba(255,255,255,0.03)", color: sel===r ? T.teal : T.text, fontSize: 14, cursor: "pointer", textAlign: "left", fontFamily: "'Syne', sans-serif", transition: "all 0.2s" }}>{r}</button>
               ))}
             </div>
-            onClick={async () => {
-            if (!sel) return;
-            const waitMap = {
-            '< 5 min': 3,
-            '5–10 min': 7,
-            '10–20 min': 15,
-            '20–30 min': 25,
-            '30+ min': 35
-  };
-    await supabase.from('submissions').insert({
-      company_id: company.id,
-      hour_of_call: new Date().getHours(),
-      wait_minutes: waitMap[sel],
-  });
-      setDone(true);
-      setTimeout(onClose, 2000);
-}}
+            <button
+              disabled={!sel}
+              onClick={async () => {
+                if (!sel) return;
+                const waitMap = {
+                  '< 5 min': 3,
+                  '5–10 min': 7,
+                  '10–20 min': 15,
+                  '20–30 min': 25,
+                  '30+ min': 35,
+                };
+                await supabase.from('submissions').insert({
+                  company_id: company.id,
+                  hour_of_call: new Date().getHours(),
+                  wait_minutes: waitMap[sel],
+                });
+                setDone(true);
+                setTimeout(onClose, 2000);
+              }}
+              style={{ width: "100%", padding: "14px", borderRadius: 12, border: "none", background: sel ? T.teal : "rgba(255,255,255,0.08)", color: sel ? "#0a0a0f" : T.faint, fontSize: 15, fontWeight: 800, cursor: sel ? "pointer" : "not-allowed", fontFamily: "'Syne', sans-serif", transition: "all 0.2s" }}
+            >
+              Share & Help Others
+            </button>
           </>
         )}
       </div>
@@ -704,7 +650,6 @@ function ContributeModal({ company, onClose }) {
   );
 }
 
-// ─── Company Detail ───────────────────────────────────────────────────────────
 function CompanyDetail({ company, onBack }) {
   const [modal, setModal] = useState(false);
   const best = getBest(company.hourly);
@@ -714,7 +659,6 @@ function CompanyDetail({ company, onBack }) {
   const max = Math.max(...company.hourly);
   const status = getAgentStatus(company);
 
-  // ── Smart recommendation in plain English ──────────────────────────────────
   const getRecommendation = () => {
     if (!status.human) {
       const nextH = company.humanHours.start;
@@ -727,11 +671,7 @@ function CompanyDetail({ company, onBack }) {
     return { type: "bad", msg: `Long wait right now. Try calling at ${fmt(bestH)} instead.` };
   };
   const rec = getRecommendation();
-
-  // Map rec.type → AnimatedBanner status string
   const bannerStatus = REC_TO_STATUS[rec.type] || "stable";
-
-  // useWaitTimeAnimation gives us the same status for the FlowPulseSVG on the wait card
   const waitStatus = useWaitTimeAnimation(nowWait, status.human);
 
   return (
@@ -749,12 +689,7 @@ function CompanyDetail({ company, onBack }) {
 
       <div style={{ maxWidth: 580, margin: "0 auto", padding: "24px 18px 72px" }}>
 
-        {/* ── Company identity ── */}
-        {/* AnimatedCard replaces the manual cardVisible + CSS fadeUp approach */}
-        <AnimatedCard delay={0} style={{
-          background: T.surface, borderRadius: 20, padding: "20px 22px",
-          border: `1px solid ${T.border}`, marginBottom: 12,
-        }}>
+        <AnimatedCard delay={0} style={{ background: T.surface, borderRadius: 20, padding: "20px 22px", border: `1px solid ${T.border}`, marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10, marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1, textTransform: "uppercase", marginBottom: 6 }}>{company.category}</div>
@@ -776,24 +711,16 @@ function CompanyDetail({ company, onBack }) {
           </div>
         </AnimatedCard>
 
-        {/* ── Smart recommendation banner ── */}
-        {/* AnimatedBanner handles its own spring color transition + FlowPulseSVG */}
         <AnimatedCard delay={0.08}>
           <AnimatedBanner status={bannerStatus} message={rec.msg} />
         </AnimatedCard>
 
-        {/* ── Wait number card ── */}
-        <AnimatedCard delay={0.15} style={{
-          background: T.surface, borderRadius: 20, padding: "20px 22px",
-          border: `1px solid ${T.border}`, marginBottom: 12,
-        }}>
+        <AnimatedCard delay={0.15} style={{ background: T.surface, borderRadius: 20, padding: "20px 22px", border: `1px solid ${T.border}`, marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
             <div style={{ fontSize: 11, color: T.faint, textTransform: "uppercase", letterSpacing: 1 }}>Hold time right now</div>
-            {/* FlowPulseSVG in the corner of the wait card — speed matches urgency */}
             <FlowPulseSVG waitTime={nowWait} isHuman={status.human} size={36} />
           </div>
           {nowWait > 0 && status.human ? (
-            // Inline metric style: "26 min wait" on one line, secondary label below
             <div>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <AnimatedWaitNumber value={nowWait} color={waitColor(nowWait)} />
@@ -818,11 +745,7 @@ function CompanyDetail({ company, onBack }) {
           )}
         </AnimatedCard>
 
-        {/* ── Chart card ── */}
-        <AnimatedCard delay={0.22} style={{
-          background: T.surface, borderRadius: 20, padding: "20px 22px",
-          border: `1px solid ${T.border}`, marginBottom: 12,
-        }}>
+        <AnimatedCard delay={0.22} style={{ background: T.surface, borderRadius: 20, padding: "20px 22px", border: `1px solid ${T.border}`, marginBottom: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4, flexWrap: "wrap", gap: 8 }}>
             <div>
               <div style={{ fontSize: 15, fontWeight: 700, color: T.text, fontFamily: T.body }}>Best times to call today</div>
@@ -836,8 +759,6 @@ function CompanyDetail({ company, onBack }) {
               ))}
             </div>
           </div>
-
-          {/* Y-axis + animated chart */}
           <div style={{ display: "flex", gap: 8, alignItems: "flex-end", marginTop: 12 }}>
             <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", height: 90, paddingBottom: 4 }}>
               <span style={{ fontSize: 10, color: T.faint, lineHeight: 1 }}>{max}m</span>
@@ -855,10 +776,7 @@ function CompanyDetail({ company, onBack }) {
           </div>
         </AnimatedCard>
 
-        {/* ── Best / Worst ── */}
-        <AnimatedCard delay={0.30} style={{
-          display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18,
-        }}>
+        <AnimatedCard delay={0.30} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 18 }}>
           <div style={{ background: "rgba(0,229,160,0.07)", border: "1px solid rgba(0,229,160,0.2)", borderRadius: 16, padding: 16 }}>
             <div style={{ fontSize: 12, color: T.teal, marginBottom: 10, fontWeight: 700, display: "flex", alignItems: "center", gap: 5 }}>
               <CheckCircle size={13} /> Call at these times
@@ -881,18 +799,10 @@ function CompanyDetail({ company, onBack }) {
           </div>
         </AnimatedCard>
 
-        {/* ── CTAs ── */}
         <AnimatedCard delay={0.38}>
           <a
             href={`tel:${company.phone.replace(/[^0-9]/g,"")}`}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-              width: "100%", padding: "17px", borderRadius: 14,
-              background: T.teal, color: "#0a0a0f", fontSize: 16, fontWeight: 800,
-              textDecoration: "none", marginBottom: 10, fontFamily: T.brand,
-              boxSizing: "border-box", transition: "transform 0.15s, box-shadow 0.15s",
-              boxShadow: "0 4px 24px rgba(0,229,160,0.25)",
-            }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, width: "100%", padding: "17px", borderRadius: 14, background: T.teal, color: "#0a0a0f", fontSize: 16, fontWeight: 800, textDecoration: "none", marginBottom: 10, fontFamily: T.brand, boxSizing: "border-box", transition: "transform 0.15s, box-shadow 0.15s", boxShadow: "0 4px 24px rgba(0,229,160,0.25)" }}
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,229,160,0.4)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,229,160,0.25)"; }}
           >
@@ -900,13 +810,7 @@ function CompanyDetail({ company, onBack }) {
           </a>
           <button
             onClick={() => setModal(true)}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-              width: "100%", padding: "13px", borderRadius: 14,
-              background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
-              color: T.muted, fontSize: 14, cursor: "pointer", fontFamily: T.body,
-              marginBottom: 16, transition: "background 0.2s, border-color 0.2s",
-            }}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "13px", borderRadius: 14, background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, color: T.muted, fontSize: 14, cursor: "pointer", fontFamily: T.body, marginBottom: 16, transition: "background 0.2s, border-color 0.2s" }}
             onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.08)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
             onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor = T.border; }}
           >
@@ -920,15 +824,11 @@ function CompanyDetail({ company, onBack }) {
             ))}
           </div>
         </AnimatedCard>
-
       </div>
     </div>
   );
 }
 
-// ─── Spotlight Card ───────────────────────────────────────────────────────────
-// Shows the #1 leaderboard company with a direct call button inline on homepage.
-// No navigation needed — user can call without ever tapping into a detail page.
 function SpotlightCard({ company, onShare, onViewDetail }) {
   const nowH = new Date().getHours();
   const wait  = company.hourly[nowH];
@@ -937,20 +837,11 @@ function SpotlightCard({ company, onShare, onViewDetail }) {
   const color  = waitColor(wait);
 
   return (
-    <div style={{
-      background: `linear-gradient(145deg, rgba(0,229,160,0.1) 0%, ${T.surface} 52%)`,
-      border: `1px solid rgba(0,229,160,0.3)`,
-      borderRadius: 20,
-      padding: "22px 22px 18px",
-      boxShadow: "inset 0 1px 0 rgba(0,229,160,0.25)",
-    }}>
-      {/* Header label */}
+    <div style={{ background: `linear-gradient(145deg, rgba(0,229,160,0.1) 0%, ${T.surface} 52%)`, border: `1px solid rgba(0,229,160,0.3)`, borderRadius: 20, padding: "22px 22px 18px", boxShadow: "inset 0 1px 0 rgba(0,229,160,0.25)" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
         <div className="live-dot" style={{ width: 7, height: 7, borderRadius: "50%", background: T.teal }} />
         <span style={{ fontSize: 10, fontWeight: 700, color: T.teal, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body }}>Best call right now</span>
       </div>
-
-      {/* Company identity row */}
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
         <CompanyLogo company={company} size={42} />
         <div style={{ flex: 1 }}>
@@ -959,8 +850,6 @@ function SpotlightCard({ company, onShare, onViewDetail }) {
         </div>
         <FlowPulseSVG waitTime={wait} isHuman={status.human} size={38} />
       </div>
-
-      {/* Metric row: "2 min wait  |  Human agent available" */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 6 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
           <span style={{ fontSize: 42, fontWeight: 800, color, lineHeight: 1, fontFamily: T.brand }}>{wait > 0 ? wait : "—"}</span>
@@ -975,8 +864,6 @@ function SpotlightCard({ company, onShare, onViewDetail }) {
           </>
         )}
       </div>
-
-      {/* Confidence line */}
       {meta && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.faint, fontFamily: T.body, marginBottom: 18 }}>
           <CheckCircle size={11} color={T.teal} />
@@ -985,47 +872,22 @@ function SpotlightCard({ company, onShare, onViewDetail }) {
           <span>Based on {meta.reports.toLocaleString()} reports</span>
         </div>
       )}
-
-      {/* PRIMARY CTA — the whole point: tap to call, zero navigation */}
       <a
         href={`tel:${company.phone.replace(/[^0-9]/g,"")}`}
-        style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
-          width: "100%", padding: "15px", borderRadius: 13,
-          background: T.teal, color: "#0a0a0f",
-          fontSize: 15, fontWeight: 800, fontFamily: T.brand,
-          textDecoration: "none", marginBottom: 8,
-          boxSizing: "border-box",
-          boxShadow: "0 4px 24px rgba(0,229,160,0.3)",
-          transition: "transform 0.15s, box-shadow 0.15s",
-        }}
+        style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, width: "100%", padding: "15px", borderRadius: 13, background: T.teal, color: "#0a0a0f", fontSize: 15, fontWeight: 800, fontFamily: T.brand, textDecoration: "none", marginBottom: 8, boxSizing: "border-box", boxShadow: "0 4px 24px rgba(0,229,160,0.3)", transition: "transform 0.15s, box-shadow 0.15s" }}
         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 32px rgba(0,229,160,0.45)"; }}
         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 4px 24px rgba(0,229,160,0.3)"; }}
       >
         <Phone size={15} /> Call {company.name} — {company.phone}
       </a>
-
-      {/* Secondary CTA row: share wait + see full chart */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <button onClick={onShare} style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          padding: "11px", borderRadius: 12,
-          background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
-          color: T.muted, fontSize: 12, cursor: "pointer", fontFamily: T.body,
-          transition: "background 0.2s",
-        }}
+        <button onClick={onShare} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, color: T.muted, fontSize: 12, cursor: "pointer", fontFamily: T.body, transition: "background 0.2s" }}
           onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
           onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
         >
           <Share2 size={12} /> How long did you wait?
         </button>
-        <button onClick={onViewDetail} style={{
-          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          padding: "11px", borderRadius: 12,
-          background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
-          color: T.muted, fontSize: 12, cursor: "pointer", fontFamily: T.body,
-          transition: "background 0.2s",
-        }}
+        <button onClick={onViewDetail} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "11px", borderRadius: 12, background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`, color: T.muted, fontSize: 12, cursor: "pointer", fontFamily: T.body, transition: "background 0.2s" }}
           onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"}
           onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
         >
@@ -1036,27 +898,20 @@ function SpotlightCard({ company, onShare, onViewDetail }) {
   );
 }
 
-// ─── Main App ─────────────────────────────────────────────────────────────────
 export default function DialTrendApp() {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [shareCompany, setShareCompany] = useState(null);
-  // Auto-show onboarding on first visit — change true → false to disable
   const [showOnboarding, setShowOnboarding] = useState(true);
 
   const nowH = new Date().getHours();
 
-  // Compute live leaderboard: companies with human agents + actual wait data, sorted ascending
   const liveRanked = COMPANIES
-    .filter(c => {
-      const status = getAgentStatus(c);
-      return status.human && c.hourly[nowH] > 0;
-    })
+    .filter(c => { const status = getAgentStatus(c); return status.human && c.hourly[nowH] > 0; })
     .sort((a, b) => a.hourly[nowH] - b.hourly[nowH])
     .slice(0, 3);
 
-  // Fallback: if not enough live companies, fill with lowest-wait regardless
   const leaderboard = liveRanked.length >= 3
     ? liveRanked
     : [...COMPANIES].sort((a, b) => a.hourly[nowH] - b.hourly[nowH]).slice(0, 3);
@@ -1099,7 +954,6 @@ export default function DialTrendApp() {
         {showOnboarding && <HowItWorksPanel onClose={() => setShowOnboarding(false)} />}
         {shareCompany && <ContributeModal company={shareCompany} onClose={() => setShareCompany(null)} />}
 
-        {/* Header */}
         <header style={{ borderBottom: `1px solid ${T.border}`, background: "rgba(10,10,15,0.92)", position: "sticky", top: 0, zIndex: 50, backdropFilter: "blur(12px)", padding: "15px 28px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Logo />
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -1112,7 +966,6 @@ export default function DialTrendApp() {
           </div>
         </header>
 
-        {/* Hero */}
         <section style={{ textAlign: "center", padding: "52px 20px 36px", background: "radial-gradient(ellipse 70% 40% at 50% 0%, rgba(0,229,160,0.07) 0%, transparent 70%)" }}>
           <h1 className="fu1" style={{ fontSize: "clamp(36px, 5.5vw, 62px)", fontWeight: 800, lineHeight: 1.1, maxWidth: 560, margin: "0 auto 16px", letterSpacing: "-1.5px", color: T.text, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
             Before you call,{" "}
@@ -1124,7 +977,6 @@ export default function DialTrendApp() {
             Skip the bot. Reach a human faster.
           </p>
 
-          {/* Search */}
           <div className="fu3" style={{ maxWidth: 480, margin: "0 auto", position: "relative" }}>
             <div style={{ position: "relative" }}>
               <Search size={17} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: "rgba(255,255,255,0.25)", pointerEvents: "none" }} />
@@ -1155,7 +1007,6 @@ export default function DialTrendApp() {
             )}
           </div>
 
-          {/* Quick chips — 3 most common + More */}
           <div className="fu4" style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
             {["Netflix", "Amazon", "AT&T"].map(name => {
               const c = COMPANIES.find(x => x.name === name);
@@ -1169,38 +1020,24 @@ export default function DialTrendApp() {
           </div>
         </section>
 
-        {/* ★ LIVE LEADERBOARD ★ */}
         <section style={{ padding: "40px 20px 48px", borderTop: `1px solid ${T.border}`, background: "rgba(0,229,160,0.02)" }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
-            {/* Section header */}
             <div className="fu5" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 24 }}>
               <div className="live-dot" style={{ width: 8, height: 8, borderRadius: "50%", background: T.teal, flexShrink: 0 }} />
               <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Live signal · {fmt(nowH)}</span>
             </div>
-
-            {/* Three ranked cards — minmax 260px gives each card enough room for full names */}
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
               {leaderboard.map((company, i) => (
                 <LiveWaitCard key={company.id} company={company} rank={i} index={i} onClick={() => setSelected(company)} />
               ))}
             </div>
-
-            {/* Data transparency bar — below all cards */}
-            <div style={{
-              marginTop: 16, padding: "11px 16px",
-              background: "rgba(255,255,255,0.025)", borderRadius: 12,
-              border: `1px solid ${T.border}`,
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              flexWrap: "wrap", gap: 8,
-            }}>
+            <div style={{ marginTop: 16, padding: "11px 16px", background: "rgba(255,255,255,0.025)", borderRadius: 12, border: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: T.faint, fontFamily: T.body }}>
                 <Clock size={11} />
                 <span>Last updated <strong style={{ color: T.muted, fontWeight: 600 }}>{minsAgoThisHour()} minutes ago</strong></span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 12, color: T.faint, fontFamily: T.body }}>
-                <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <Users size={10} /> Community-submitted reports
-                </span>
+                <span style={{ display: "flex", alignItems: "center", gap: 5 }}><Users size={10} /> Community-submitted reports</span>
                 <span style={{ color: T.border }}>·</span>
                 <span>Refreshes each hour</span>
               </div>
@@ -1208,22 +1045,15 @@ export default function DialTrendApp() {
           </div>
         </section>
 
-        {/* Marquee — with brand logos */}
         <div style={{ overflow: "hidden", padding: "11px 0", background: T.surface, borderBottom: `1px solid ${T.border}`, borderTop: `1px solid ${T.border}` }}>
           <div style={{ display: "flex", gap: 0, animation: "marquee 40s linear infinite", width: "max-content", alignItems: "center" }}>
             {[...COMPANIES, ...COMPANIES].map((c, i) => {
               const meta = COMPANY_META[c.id];
               return (
                 <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 28px" }}>
-                  {/* Mini logo */}
                   {meta ? (
                     <div style={{ width: 18, height: 18, borderRadius: 4, overflow: "hidden", background: "rgba(255,255,255,0.06)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <img
-                        src={`https://logo.clearbit.com/${meta.domain}`}
-                        alt={c.name}
-                        style={{ width: 14, height: 14, objectFit: "contain" }}
-                        onError={e => { e.target.style.display = "none"; }}
-                      />
+                      <img src={`https://logo.clearbit.com/${meta.domain}`} alt={c.name} style={{ width: 14, height: 14, objectFit: "contain" }} onError={e => { e.target.style.display = "none"; }} />
                     </div>
                   ) : (
                     <div style={{ width: 18, height: 18, borderRadius: 4, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: T.faint }}>{c.name[0]}</div>
@@ -1235,18 +1065,11 @@ export default function DialTrendApp() {
           </div>
         </div>
 
-        {/* ── Browse + Spotlight ─────────────────────────────────────────── */}
         <section id="browse-all" style={{ padding: "40px 20px 56px", background: T.surface }}>
           <div style={{ maxWidth: 760, margin: "0 auto" }}>
-
-            {/* Two-column company browser */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 28 }}>
-
-              {/* Left: Top companies this hour — sorted by wait, human only */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body, marginBottom: 14 }}>
-                  Top companies this hour
-                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body, marginBottom: 14 }}>Top companies this hour</div>
                 {[...COMPANIES]
                   .filter(c => { const s = getAgentStatus(c); return s.human && c.hourly[nowH] > 0; })
                   .sort((a, b) => a.hourly[nowH] - b.hourly[nowH])
@@ -1254,14 +1077,7 @@ export default function DialTrendApp() {
                   .map(c => {
                     const wait = c.hourly[nowH];
                     return (
-                      <button key={c.id} onClick={() => setSelected(c)} style={{
-                        display: "flex", alignItems: "center", gap: 10,
-                        width: "100%", padding: "10px 12px", marginBottom: 6,
-                        borderRadius: 12, border: `1px solid ${T.border}`,
-                        background: "rgba(255,255,255,0.025)",
-                        cursor: "pointer", textAlign: "left", fontFamily: T.body,
-                        transition: "all 0.18s",
-                      }}
+                      <button key={c.id} onClick={() => setSelected(c)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 12px", marginBottom: 6, borderRadius: 12, border: `1px solid ${T.border}`, background: "rgba(255,255,255,0.025)", cursor: "pointer", textAlign: "left", fontFamily: T.body, transition: "all 0.18s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = T.tealBorder; e.currentTarget.style.background = T.tealDim; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = "rgba(255,255,255,0.025)"; }}
                       >
@@ -1278,12 +1094,8 @@ export default function DialTrendApp() {
                     );
                   })}
               </div>
-
-              {/* Right: Recently trending — biggest absolute change from last hour */}
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body, marginBottom: 14 }}>
-                  Recently trending
-                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.faint, letterSpacing: 1.4, textTransform: "uppercase", fontFamily: T.body, marginBottom: 14 }}>Recently trending</div>
                 {[...COMPANIES]
                   .map(c => ({ c, trend: getTrend(c.hourly) }))
                   .filter(x => x.trend !== 0 && getAgentStatus(x.c).human)
@@ -1293,27 +1105,17 @@ export default function DialTrendApp() {
                     const rising = trend > 0;
                     const tColor = rising ? "#ef4444" : "#00e5a0";
                     return (
-                      <button key={c.id} onClick={() => setSelected(c)} style={{
-                        display: "flex", alignItems: "center", gap: 10,
-                        width: "100%", padding: "10px 12px", marginBottom: 6,
-                        borderRadius: 12, border: `1px solid ${T.border}`,
-                        background: "rgba(255,255,255,0.025)",
-                        cursor: "pointer", textAlign: "left", fontFamily: T.body,
-                        transition: "all 0.18s",
-                      }}
+                      <button key={c.id} onClick={() => setSelected(c)} style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 12px", marginBottom: 6, borderRadius: 12, border: `1px solid ${T.border}`, background: "rgba(255,255,255,0.025)", cursor: "pointer", textAlign: "left", fontFamily: T.body, transition: "all 0.18s" }}
                         onMouseEnter={e => { e.currentTarget.style.borderColor = tColor + "55"; e.currentTarget.style.background = tColor + "0d"; }}
                         onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.background = "rgba(255,255,255,0.025)"; }}
                       >
-                        {/* Trend dot */}
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: tColor, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, fontWeight: 600, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
                           <div style={{ fontSize: 11, color: T.faint }}>{c.category}</div>
                         </div>
                         <div style={{ textAlign: "right", flexShrink: 0 }}>
-                          <div style={{ fontSize: 13, fontWeight: 800, color: tColor, fontFamily: T.brand }}>
-                            {rising ? "↑" : "↓"} {Math.abs(trend)}m
-                          </div>
+                          <div style={{ fontSize: 13, fontWeight: 800, color: tColor, fontFamily: T.brand }}>{rising ? "↑" : "↓"} {Math.abs(trend)}m</div>
                           <div style={{ fontSize: 10, color: T.faint }}>from last hr</div>
                         </div>
                       </button>
@@ -1322,17 +1124,14 @@ export default function DialTrendApp() {
               </div>
             </div>
 
-            {/* Spotlight — #1 company with inline call button. Zero navigation needed. */}
             <SpotlightCard
               company={leaderboard[0]}
               onShare={() => setShareCompany(leaderboard[0])}
               onViewDetail={() => setSelected(leaderboard[0])}
             />
-
           </div>
         </section>
 
-        {/* Footer */}
         <footer style={{ padding: "22px 20px", textAlign: "center", borderTop: `1px solid ${T.border}`, background: T.bg, color: T.faint, fontSize: 13 }}>
           <div style={{ marginBottom: 10, display: "flex", justifyContent: "center" }}><Logo /></div>
           <div style={{ display: "flex", justifyContent: "center", gap: 22, marginBottom: 10 }}>
