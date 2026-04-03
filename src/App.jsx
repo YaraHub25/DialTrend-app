@@ -337,8 +337,8 @@ function CompanyLogo({ company, size = 32 }) {
 
   return (
     <div style={{
-      width: size, height: size, borderRadius: size * 5.28,
-      background: "rgba(255,255,255,0.06)", border: "5px solid rgba(255,255,255,0.08)",
+      width: size, height: size, borderRadius: size * 0.28,
+      background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.08)",
       display: "flex", alignItems: "center", justifyContent: "center",
       overflow: "hidden", flexShrink: 0,
     }}>
@@ -346,7 +346,7 @@ function CompanyLogo({ company, size = 32 }) {
         src={`https://logo.clearbit.com/${meta.domain}`}
         alt={company.name}
         onError={() => setFailed(true)}
-        style={{ width: size * 7.72, height: size * 7.72, objectFit: "contain" }}
+        style={{ width: size * 0.72, height: size * 0.72, objectFit: "contain" }}
       />
     </div>
   );
@@ -381,7 +381,7 @@ function BarChart({ hourly, compact = false, animate = false }) {
               onMouseEnter={() => !compact && setHovered(i)}
               onMouseLeave={() => !compact && setHovered(null)}
               style={{
-                flex: 1, height: h, borderRadius: "5px 5px 0 0",
+                flex: 1, height: h, borderRadius: "3px 3px 0 0",
                 background: color,
                 opacity: isHov ? 1 : isNow ? 1 : 0.65,
                 boxShadow: isNow ? `0 0 10px ${color}99` : isHov ? `0 0 8px ${color}66` : "none",
@@ -432,7 +432,7 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         background: `linear-gradient(160deg, rgba(${r.rgb},0.13) 0%, ${T.surface} 60%)`,
         border: `1px solid ${r.border}`,
         borderRadius: 20, padding: "0", cursor: "pointer",
-        fontFamily: T.brand, textAlign: "center", width: "100%",
+        fontFamily: T.brand, textAlign: "left", width: "100%",
         transition: "all 0.22s", display: "flex", flexDirection: "column",
         // ↓ overflow must be VISIBLE — overflow:hidden clips the FlowPulseSVG glow layer
         overflow: "visible",
@@ -442,34 +442,37 @@ function LiveWaitCard({ company, rank, index, onClick }) {
         onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; e.currentTarget.style.boxShadow = `inset 0 1px 0 rgba(${r.rgb},0.3), 0 16px 48px rgba(${r.rgb},0.22)`; }}
         onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = `inset 0 1px 0 rgba(${r.rgb},0.3)`; }}
       >
-        {/* ── Status badge — single line, no wrap ── */}
-        <div style={{ padding: "16px 18px 0" }}>
+        {/* ── Row 1: Status badge (left) + FlowPulseSVG (right) ── */}
+        {/* Putting FlowPulse here frees the name row to use full available width */}
+        <div style={{
+          padding: "16px 18px 0",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+        }}>
           <div style={{
-            display: "inline-flex", alignItems: "center", gap: 7,
-            padding: "6px 10px", borderRadius: 20,
+            display: "inline-flex", alignItems: "center",
+            padding: "6px 16px", borderRadius: 20,
             background: `rgba(${r.rgb},0.18)`, border: `1px solid rgba(${r.rgb},0.45)`,
             whiteSpace: "nowrap",
           }}>
-            <span style={{ fontSize: 15, fontWeight: 680, color: r.color, letterSpacing: 1.4, fontFamily: T.brand }}>{r.label}</span>
+            <span style={{ fontSize: 11, fontWeight: 800, color: r.color, letterSpacing: 1.4, fontFamily: T.brand }}>{r.label}</span>
+          </div>
+          {/* FlowPulseSVG pinned top-right — rank-matched color */}
+          <div style={{ flexShrink: 0 }}>
+            <FlowPulseSVG waitTime={[5, 15, 30][rank]} isHuman={status.human} size={38} />
           </div>
         </div>
 
-        {/* ── Company identity: logo + name + FlowPulseSVG ── */}
-        <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 10 }}>
-          <CompanyLogo company={company} size={36} />
+        {/* ── Row 2: Logo + full-width name ── */}
+        {/* FlowPulse is now in row 1, so name has logo-width + gap removed from constraint */}
+        <div style={{ padding: "14px 18px 0", display: "flex", alignItems: "center", gap: 12 }}>
+          <CompanyLogo company={company} size={38} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Allow 2-line wrap so long names never truncate */}
             <div style={{
-              fontSize: 16, fontWeight: 800, color: T.text, lineHeight: 1.25,
-              display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
-              overflow: "hidden",
+              fontSize: 18, fontWeight: 800, color: T.text,
+              lineHeight: 1.25, wordBreak: "break-word",
+              whiteSpace: "normal",            // wrap freely — no clamp, no ellipsis
             }}>{company.name}</div>
-            <div style={{ fontSize: 11, color: T.faint, marginTop: 2, fontFamily: T.body }}>{company.category}</div>
-          </div>
-          {/* FlowPulseSVG — waitTime forced by rank so color matches card:
-              rank 0 CALL NOW → stable (teal), rank 1 CONSIDER → warning (amber), rank 2 AVOID → critical (red) */}
-          <div style={{ flexShrink: 0, padding: "4px" }}>
-            <FlowPulseSVG waitTime={[5, 15, 30][rank]} isHuman={status.human} size={40} />
+            <div style={{ fontSize: 11, color: T.faint, marginTop: 3, fontFamily: T.body }}>{company.category}</div>
           </div>
         </div>
 
@@ -1158,8 +1161,8 @@ export default function DialTrendApp() {
               <span style={{ fontSize: 12, fontWeight: 700, color: T.teal, textTransform: "uppercase", letterSpacing: 2, fontFamily: T.body }}>Live signal · {fmt(nowH)}</span>
             </div>
 
-            {/* Three ranked cards */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(230px, 1fr))", gap: 14 }}>
+            {/* Three ranked cards — minmax 260px gives each card enough room for full names */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
               {leaderboard.map((company, i) => (
                 <LiveWaitCard key={company.id} company={company} rank={i} index={i} onClick={() => setSelected(company)} />
               ))}
@@ -1188,12 +1191,30 @@ export default function DialTrendApp() {
           </div>
         </section>
 
-        {/* Marquee */}
-        <div style={{ overflow: "hidden", padding: "13px 0", background: T.surface, borderBottom: `1px solid ${T.border}`, borderTop: `1px solid ${T.border}` }}>
-          <div style={{ display: "flex", gap: 48, animation: "marquee 32s linear infinite", width: "max-content" }}>
-            {[...COMPANIES, ...COMPANIES].map((c,i) => (
-              <span key={i} style={{ color: T.faint, fontSize: 11, fontWeight: 700, whiteSpace: "nowrap", letterSpacing: 2 }}>{c.name.toUpperCase()}</span>
-            ))}
+        {/* Marquee — with brand logos */}
+        <div style={{ overflow: "hidden", padding: "11px 0", background: T.surface, borderBottom: `1px solid ${T.border}`, borderTop: `1px solid ${T.border}` }}>
+          <div style={{ display: "flex", gap: 0, animation: "marquee 40s linear infinite", width: "max-content", alignItems: "center" }}>
+            {[...COMPANIES, ...COMPANIES].map((c, i) => {
+              const meta = COMPANY_META[c.id];
+              return (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 28px" }}>
+                  {/* Mini logo */}
+                  {meta ? (
+                    <div style={{ width: 18, height: 18, borderRadius: 4, overflow: "hidden", background: "rgba(255,255,255,0.06)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img
+                        src={`https://logo.clearbit.com/${meta.domain}`}
+                        alt={c.name}
+                        style={{ width: 14, height: 14, objectFit: "contain" }}
+                        onError={e => { e.target.style.display = "none"; }}
+                      />
+                    </div>
+                  ) : (
+                    <div style={{ width: 18, height: 18, borderRadius: 4, background: "rgba(255,255,255,0.06)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: T.faint }}>{c.name[0]}</div>
+                  )}
+                  <span style={{ color: T.faint, fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", letterSpacing: 1.5 }}>{c.name.toUpperCase()}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
 
